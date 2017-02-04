@@ -1,0 +1,2 @@
+# Read values from PMS5003 Particulate Matter Sensor and write them to status file.
+*/15 * * * *    root    /usr/local/bin/pms5003

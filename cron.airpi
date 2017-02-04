@@ -1,0 +1,2 @@
+# Store sensors data into SQL and RRD databases.
+*/5 * * * *    root    /usr/local/bin/airpi-data-store
