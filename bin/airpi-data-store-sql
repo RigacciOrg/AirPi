@@ -1,0 +1,82 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#---------------------------------------------------------------
+# Copyright (C) 2016 Niccolo Rigacci
+#
+# Save monitoring data into an SQLite database.
+#
+# Data is passed on the command line like that:
+#
+#   airpi-data-store-sql t=19.60,hum=66.5,p=990,...
+#
+#---------------------------------------------------------------
+
+import datetime, os.path, sqlite3, sys
+
+SQLITE_DB = '/var/lib/airpi/airpi-data.db'
+BME280_DATA = ['t', 'p', 'hum']
+PMS5003_DATA = ['pm1.0', 'pm2.5', 'pm10', 'apm1.0', 'apm2.5', 'apm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
+VALID_DATA = BME280_DATA + PMS5003_DATA
+NAME = os.path.basename(sys.argv[0])
+
+#---------------------------------------------------------------
+# Create the SQLite database.
+#---------------------------------------------------------------
+def sqlcreate(filename):
+    try:
+        con = sqlite3.connect(filename)
+        cur = con.cursor()
+        con.execute('''CREATE TABLE IF NOT EXISTS data(
+            id        INTEGER PRIMARY KEY,
+            timestamp TEXT,
+            type      TEXT,
+            value     REAL)''')
+        con.execute('CREATE INDEX data_timestamp_idx ON data (timestamp)')
+        con.execute('CREATE INDEX data_type_idx ON data (type)')
+        con.execute('CREATE UNIQUE INDEX data_timestamp_type_key ON data (timestamp, type)')
+        con.commit()
+        con.close()
+    except Exception, e:
+        print "ERROR: %s: Failed to create the SQLite database: %s" % (NAME, str(e),)
+        sys.exit(1)
+
+#---------------------------------------------------------------
+# Main.
+#---------------------------------------------------------------
+timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+if len(sys.argv) < 2:
+    print "Usage:   %s type1=value1,type2=value2,..." % (NAME)
+    print "Example: %s t=19.60,hum=66.5,p=990,pm10=54.43,pm2.5=43.78" % (NAME)
+    sys.exit(1)
+data = sys.argv[1].split(',')
+
+if not os.path.isfile(SQLITE_DB):
+    sqlcreate(SQLITE_DB)
+
+try:
+    con = sqlite3.connect(SQLITE_DB)
+    cur = con.cursor()
+except Exception, e:
+    print "ERROR: %s: Cannot open database: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+for d in data:
+    try:
+        key, val = d.split('=')
+        if key.lower() in VALID_DATA:
+            val = float(val)
+            sql = "INSERT INTO data (timestamp, type, value) VALUES ('%s', '%s', %s)" % (timestamp, key.lower(), val)
+            #print sql
+            con.execute(sql)
+        else:
+            print 'ERROR: %s: Data "%s" does not contain a valid field' % (NAME, d)
+    except Exception, e:
+        print 'ERROR: %s: Data "%s" caused exception "%s"' % (NAME, d, str(e))
+        continue
+
+try:
+    con.commit()
+    con.close()
+except Exception, e:
+    print 'ERROR: %s: Committing data to database: "%s"' % (NAME, str(e))

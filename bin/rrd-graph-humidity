@@ -1,0 +1,47 @@
+#!/bin/sh
+
+RRD_ARCHVIE='/var/lib/airpi/airpi-data.rrd'
+TIMESTAMP="$(/bin/date '+%Y-%m-%d %H:%M')"
+
+case "$1" in
+    daily)
+        START='-86400'
+        AVG='5 min'
+        ;;
+    monthly)
+        START='-2678400'
+        AVG='2 hours'
+        ;;
+    yearly)
+        START='-31622400'
+        AVG='1 day'
+        ;;
+    *)
+        START='-604800'
+        AVG='30 min'
+        ;;
+esac
+
+/usr/bin/rrdtool graph - \
+--imgformat=PNG \
+--start="$START" \
+--end='-300' \
+--title="Air Humidity, $AVG avg. ($TIMESTAMP)" \
+--base='1000' \
+--height='240' \
+--width='640' \
+--alt-autoscale \
+--y-grid='1:5' \
+--vertical-label='%RH' \
+--slope-mode \
+--font TITLE:10: \
+--font AXIS:7: \
+--font LEGEND:8: \
+--font UNIT:7: \
+DEF:a="$RRD_ARCHVIE":hum:AVERAGE \
+CDEF:cdefa='a,1000,/' \
+LINE2:cdefa#4668E4FF:'Humidity'  \
+GPRINT:cdefa:LAST:'Cur\:%8.2lf'  \
+GPRINT:cdefa:MIN:'Min\:%8.2lf'  \
+GPRINT:cdefa:AVERAGE:'Avg\:%8.2lf'  \
+GPRINT:cdefa:MAX:'Max\:%8.2lf\n' 

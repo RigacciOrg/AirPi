@@ -1,0 +1,77 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import os, os.path, pickle, sys
+from Adafruit_BME280 import *
+
+NAME = os.path.basename(sys.argv[0])
+BME280_STATUS = '/var/run/bme280.status'
+READ_SAMPLES = 7
+MAX_CACHE_SECONDS = 20
+
+#-------------------------------------------------------------------------
+# Get values from BME280 sensors (temperature, pressure, humidity).
+#-------------------------------------------------------------------------
+def readBME280All(sensor, samples):
+    t = p = h = 0
+    for i in range(0, samples):
+        degrees = sensor.read_temperature()
+        hectopascals = (sensor.read_pressure() / 100.0)
+        humidity = sensor.read_humidity()
+        #print 'Timestamp: {0:0.3f}'.format(sensor.t_fine)
+        #print "Temperature (°C): {0:0.3f}".format(degrees)
+        #print "Pressure (hPa): {0:0.2f}".format(hectopascals)
+        #print "Humidity (%): {0:0.2f}".format(humidity)
+        t += degrees
+        p += hectopascals
+        h += humidity
+        time.sleep(0.1);
+    return t / float(samples), p / float(samples), h / float(samples)
+
+#-------------------------------------------------------------------------
+# Main.
+#-------------------------------------------------------------------------
+temperature, pressure, humidity = (None, None, None)
+if len(sys.argv) < 2: interactive = True
+else: interactive = False
+
+# Read data from cache, if it exists and if it is fresh enough.
+try:
+    if os.path.isfile(BME280_STATUS):
+        st = os.stat(BME280_STATUS)
+        if (time.time() - st.st_mtime) <= MAX_CACHE_SECONDS:
+            with open(BME280_STATUS) as f:
+                temperature, pressure, humidity = pickle.load(f)
+except Exception, e:
+    if interactive:
+        print "WARNING: %s: Cannot read values from status file: %s" % (NAME, str(e))
+
+if temperature == None or pressure == None or humidity == None:
+    # Read from cache failed, get a real measurement.
+    try:
+        sensor = BME280(mode=BME280_OSAMPLE_16)
+        temperature, pressure, humidity = readBME280All(sensor, READ_SAMPLES)
+    except Exception, e:
+        print "ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e))
+        sys.exit(1)
+
+    try:
+        with open(BME280_STATUS, 'w') as f:
+            pickle.dump([temperature, pressure, humidity], f)
+    except Exception, e:
+        if interactive:
+            print "WARNING: %s: Cannot write status file: %s" % (NAME, str(e))
+
+if interactive:
+    print "Temperature (°C): {0:0.3f}".format(temperature)
+    print "Pressure (hPa): {0:0.2f}".format(pressure)
+    print "Humidity (%): {0:0.2f}".format(humidity)
+elif sys.argv[1] == 'temperature':
+    print "%d" % (int(float(temperature) * 1000))
+elif sys.argv[1] == 'pressure':
+    print "%d" % (int(float(pressure) * 1000))
+elif sys.argv[1] == 'humidity':
+    print "%d" % (int(float(humidity) * 1000))
+else:
+    print "Usage: %s [temperature|pressure|humidity]" % (NAME,)
+    sys.exit(1)

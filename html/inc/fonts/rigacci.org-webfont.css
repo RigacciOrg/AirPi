@@ -1,0 +1,55 @@
+@font-face {
+  font-family: 'RigacciOrgFont';
+  src: url('rigacci.org-webfont.eot'); /* IE 9 Compatibility Mode */
+  src: url('rigacci.org-webfont.eot?#iefix') format('embedded-opentype'), /* IE < 9 */
+       url('rigacci.org-webfont.woff') format('woff'), /* Firefox >= 3.6, any other modern browser */
+       url('rigacci.org-webfont.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('rigacci.org-webfont.svg#rigacci.org-webfont') format('svg'); /* Chrome < 4, Legacy iOS */
+  font-weight: normal;
+  font-style: normal;
+}
+
+.rof {
+  display: inline-block;
+  font: normal normal normal 14px/1 RigacciOrgFont;
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.rof-5x { font-size: 5em; }
+.rof-4x { font-size: 4em; }
+.rof-3x { font-size: 3em; }
+
+
+/* Rigacci.Org-Webfont uses the Unicode Private Use Area (PUA) to ensure screen
+   readers do not read off random characters that represent icons */
+.rof-arrow-down-1:before        { content: "\f000"; }
+.rof-arrow-down-2:before        { content: "\f001"; }
+.rof-arrow-down-3:before        { content: "\f002"; }
+.rof-arrows_left_right:before   { content: "\f003"; }
+.rof-arrow-up-1:before          { content: "\f004"; }
+.rof-arrow-up-2:before          { content: "\f005"; }
+.rof-arrow-up-3:before          { content: "\f006"; }
+.rof-car-smoke:before           { content: "\f007"; }
+.rof-dust-mask:before           { content: "\f008"; }
+.rof-flower:before              { content: "\f009"; }
+.rof-flower-1:before            { content: "\f00a"; }
+.rof-flower-2:before            { content: "\f00b"; }
+.rof-flower-3:before            { content: "\f00c"; }
+.rof-flower-4:before            { content: "\f00d"; }
+.rof-flower-5:before            { content: "\f00e"; }
+.rof-gas-mask:before            { content: "\f00f"; }
+.rof-gas-mask-1:before          { content: "\f010"; }
+.rof-plant-smoke:before         { content: "\f011"; }
+.rof-skull:before               { content: "\f012"; }
+.rof-skull-1:before             { content: "\f013"; }
+.rof-skull-2:before             { content: "\f014"; }
+.rof-skull-3:before             { content: "\f015"; }
+.rof-skull-4:before             { content: "\f016"; }
+.rof-weather:before             { content: "\f017"; }
+.rof-weather-clouds-rain:before { content: "\f018"; }
+.rof-weather-clouds:before      { content: "\f019"; }
+.rof-weather-sun-cloud:before   { content: "\f01a"; }
+.rof-weather-sun:before         { content: "\f01b"; }

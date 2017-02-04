@@ -1,0 +1,71 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import datetime, os, os.path, re, subprocess, sys, time
+
+sql_archive = '/var/lib/airpi/airpi-data.db'
+rrd_archive = '/var/lib/airpi/airpi-data.rrd'
+
+def usage():
+    print u'Usage: %s "YYYY-mm-dd HH:MM"' % (os.path.basename(sys.argv[0]))
+    print u"Delete old AirPi data from RRD and SQLite archives."
+    sys.exit(1)
+
+if len(sys.argv) < 2: usage()
+
+try:
+    # Convert timestamp string => datetime => POSIX timestamp.
+    #reference = '2017-01-12 18:50'
+    reference = sys.argv[1]
+    reference_dt = datetime.datetime.strptime(reference, '%Y-%m-%d %H:%M')
+    reference_ts = time.mktime(reference_dt.timetuple())
+except:
+    print u"ERROR: Cannot parse datetime string"
+    usage()
+
+if not os.path.isfile(sql_archive) or not os.path.isfile(rrd_archive):
+    print u'ERROR: Missing archive "%s" or "%s"' % (sql_archive, rrd_archive)
+    sys.exit(1)
+
+rrd_xmldump = '/var/lib/airpi/airpi-data.xml'
+rrd_purged  = '/var/lib/airpi/airpi-data-purged.xml'
+
+#========================================================================
+# Delete old lines from SQLite database (which uses UTC times).
+#========================================================================
+print u"Deleting old rows from SQLite database..."
+utc_dt = datetime.datetime.utcfromtimestamp(reference_ts)
+reference_utc = utc_dt.strftime('%Y-%m-%dT%H:%M')
+sql = "DELETE FROM data WHERE timestamp < '%s'; VACUUM;" % (reference_utc);
+#sql = "SELECT * FROM data WHERE timestamp < '%s' LIMIT 10;" % (reference_utc);
+cmd = ['sqlite3', sql_archive, sql]
+if (subprocess.call(cmd) != 0):
+    sys.exit(1)
+
+#========================================================================
+# Dump the entire RRD archive, zeroes old data and restore it.
+#========================================================================
+print u"Deleting old rows from RRD database..."
+cmd = ['rrdtool', 'dump', rrd_archive, rrd_xmldump]
+if (subprocess.call(cmd) != 0):
+    sys.exit(1)
+# <!-- 2016-12-08 21:00:00 CET / 1481227200 --> <row>...
+row_regex = re.compile('^\s+<!-- (.*) / (\d+) --> <row>')
+with open(rrd_xmldump, 'r') as f_in:
+    with open(rrd_purged, 'w') as f_out:
+        for line in f_in:
+            match = row_regex.match(line)
+            if match:
+                timestamp_str = match.group(1)
+                timestamp_dt  = datetime.datetime.fromtimestamp(long(match.group(2)))
+                if timestamp_dt < reference_dt:
+                    v_count = line.count('<v>')
+                    line = match.group(0) + ('<v>NaN</v>' * v_count) + '</row>\n'
+            f_out.write(line)
+cmd = ['rrdtool', 'restore', rrd_purged, rrd_archive, '--force-overwrite']
+if (subprocess.call(cmd) != 0):
+    sys.exit(1)
+os.remove(rrd_xmldump)
+os.remove(rrd_purged)
+
+print u"Done!"

@@ -1,0 +1,62 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#---------------------------------------------------------------
+# Copyright (C) 2016 Niccolo Rigacci
+#---------------------------------------------------------------
+
+import datetime, os.path, sqlite3, sys
+
+SQLITE_DB = '/var/lib/airpi/airpi-data.db'
+BME280_DATA = ['t', 'p', 'hum']
+PMS5003_DATA = ['pm1.0', 'pm2.5', 'pm10', 'apm1.0', 'apm2.5', 'apm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
+VALID_DATA = BME280_DATA + PMS5003_DATA
+NAME = os.path.basename(sys.argv[0])
+
+#---------------------------------------------------------------
+# Main.
+#---------------------------------------------------------------
+if len(sys.argv) < 3:
+    print "Usage: %s YYYY-MM-DD YYYY-MM-DD [field1,field2,...]" % (NAME)
+    print "Extract data from AirPi database from date1 (included) to date2 (excluded)."
+    sys.exit(1)
+
+try:
+    date_begin = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
+    date_end   = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
+    if len(sys.argv) < 4:
+        fields = None
+    else:
+        fields = sys.argv[3].split(',')
+except Exception, e:
+    print "ERROR: %s: Syntax error in command line: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+if fields:
+    for f in list(fields):
+        if not f in VALID_DATA:
+            print 'WARNING: %s: Field "%s" does not exists' % (NAME, f)
+            fields.remove(f)
+
+sql = "SELECT timestamp, type, value FROM data WHERE timestamp >= ? AND timestamp < ?"
+if fields: sql += " AND type IN ('%s')" % ("', '".join(fields))
+sql += " ORDER BY timestamp, type"
+#print sql
+
+try:
+    con = sqlite3.connect(SQLITE_DB)
+    cur = con.cursor()
+except Exception, e:
+    print "ERROR: %s: Cannot open database: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+try:
+    for row in cur.execute(sql, (date_begin, date_end)):
+        timestamp = datetime.datetime.strptime(row[0], '%Y-%m-%dT%H:%M:%SZ')
+        print "%s,%s,%s" % (timestamp.strftime("%Y-%m-%d %H:%M:%S"), row[1], row[2])
+except Exception, e:
+    print "ERROR: %s: Error reading the database: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+con.close()
+sys.exit(0)

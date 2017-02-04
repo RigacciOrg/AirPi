@@ -1,0 +1,105 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2016 Niccolo Rigacci
+#
+# Store sensors data into an RRD archive. If the archive does
+# not exist, it will be created.
+#
+# * Replace dots (".") in data names with underscores.
+# * Multiply float values by 1000 and convert them to int.
+# * Use local time for timestamping.
+
+import time, os.path, subprocess, sys
+
+# Round Robin Database file.
+RRD_ARCHIVE = '/var/lib/airpi/airpi-data.rrd'
+# Some data must be multiplied by 1000.
+MULTPLY_BY_1000 = ['t', 'p', 'hum']
+
+NAME = os.path.basename(sys.argv[0])
+
+if len(sys.argv) < 3:
+    print "Usage: %s ds_name[:ds-name]... value[:value]..." % (NAME)
+    sys.exit(1)
+
+#---------------------------------------------------------------
+# Create the RRD archive.
+#---------------------------------------------------------------
+def rrdcreate(filename):
+    data_sources = (
+      'DS:t:GAUGE:600:-40000:85000',	# BME280 temperature: -40~85 °C
+      'DS:p:GAUGE:600:300000:1100000',	# BME280 pressure: 300~1100 hPa
+      'DS:hum:GAUGE:600:0:100000',	# BME280 humidity: 0~100 %
+      'DS:cf1pm1_0:GAUGE:600:0:3000',	# PMS5003 ...
+      'DS:cf1pm2_5:GAUGE:600:0:3000',	# ...
+      'DS:cf1pm10:GAUGE:600:0:3000',
+      'DS:pm1_0:GAUGE:600:0:3000',
+      'DS:pm2_5:GAUGE:600:0:3000',
+      'DS:pm10:GAUGE:600:0:3000',
+      'DS:gt0_3um:GAUGE:600:0:U',
+      'DS:gt0_5um:GAUGE:600:0:U',
+      'DS:gt1_0um:GAUGE:600:0:U',
+      'DS:gt2_5um:GAUGE:600:0:U',
+      'DS:gt5um:GAUGE:600:0:U',
+      'DS:gt10um:GAUGE:600:0:U'
+    )
+    # RRA:AVERAGE|MIN|MAX|LAST:xff:steps:rows
+    #   xff: requires 1/2 = 0.5 ratio unknown/data to keep data
+    #   steps: primary data points used to build a consolidated one
+    #   rows: how many data values are kept in an RRA
+    # (5 * 1)   = ( 5 min average) * 600 =~  2 days
+    # (5 * 6)   = (30 min average) * 700 =~ 14 days
+    # (5 * 24)  = ( 2 h   average) * 775 =~  2 months
+    # (5 * 288) = (24 h   average) * 797 =~  2 years
+    rr_archives = (
+      'RRA:AVERAGE:0.5:1:600',
+      'RRA:AVERAGE:0.5:6:700',
+      'RRA:AVERAGE:0.5:24:775',
+      'RRA:AVERAGE:0.5:288:797',
+      'RRA:MIN:0.5:1:600',
+      'RRA:MIN:0.5:6:700',
+      'RRA:MIN:0.5:24:775',
+      'RRA:MIN:0.5:288:797',
+      'RRA:MAX:0.5:1:600',
+      'RRA:MAX:0.5:6:700',
+      'RRA:MAX:0.5:24:775',
+      'RRA:MAX:0.5:288:797'
+    )
+    cmd = ['rrdtool', 'create', filename, '--step', '300']
+    cmd += data_sources + rr_archives
+    #print cmd
+    retcode = subprocess.call(cmd)
+    if retcode != 0:
+        print "ERROR: %s: Failed to create the RRD archive" % (NAME,)
+
+#---------------------------------------------------------------
+# Main.
+#---------------------------------------------------------------
+if not os.path.isfile(RRD_ARCHIVE):
+    rrdcreate(RRD_ARCHIVE)
+
+names = sys.argv[1].split(':')
+values = sys.argv[2].split(':')
+
+data = []
+data.append(str(int(time.time())))
+try:
+    for i in range(0, len(names)):
+        if names[i] in MULTPLY_BY_1000:
+            data.append(str(int(float(values[i]) * 1000)))
+        else:
+            data.append(str(int(float(values[i]))))
+except Exception, e:
+    print "ERROR: %s: Error parsing input data: %s" % (NAME, str(e),)
+
+if (len(data) - 1) != len(names):
+    print "ERROR: %s: Missing some data" % (NAME,)
+    sys.exit(1)
+else:
+    template = ':'.join(names).replace('.', '_')
+    cmd = ["rrdtool", "update", RRD_ARCHIVE, "--template", template, ':'.join(data)]
+    #print cmd
+    retcode = subprocess.call(cmd)
+    if retcode != 0:
+        print "ERROR: %s: Failed to update the RRD archive" % (NAME,)

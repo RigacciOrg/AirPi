@@ -1,0 +1,51 @@
+#!/bin/sh
+
+RRD_ARCHVIE='/var/lib/airpi/airpi-data.rrd'
+TIMESTAMP="$(/bin/date '+%Y-%m-%d %H:%M')"
+
+case "$1" in
+    daily)
+        START='-86400'
+        AVG='5 min'
+        ;;
+    monthly)
+        START='-2678400'
+        AVG='2 hours'
+        ;;
+    yearly)
+        START='-31622400'
+        AVG='1 day'
+        ;;
+    *)
+        START='-604800'
+        AVG='30 min'
+        ;;
+esac
+
+/usr/bin/rrdtool graph - \
+--imgformat=PNG \
+--start="$START" \
+--end='-300' \
+--title="Air PM Concentration, $AVG avg. ($TIMESTAMP)" \
+--base='1000' \
+--height='240' \
+--width='640' \
+--alt-autoscale-max \
+--lower-limit='0' \
+--vertical-label='micrograms/m³' \
+--slope-mode \
+--font TITLE:10: \
+--font AXIS:7: \
+--font LEGEND:8: \
+--font UNIT:7: \
+DEF:a="$RRD_ARCHVIE":pm10:AVERAGE \
+DEF:b="$RRD_ARCHVIE":pm2_5:AVERAGE \
+AREA:a#BA9b64FF:'PM10'  \
+GPRINT:a:LAST:' Cur\:%8.2lf %s'  \
+GPRINT:a:AVERAGE:'Avg\:%8.2lf %s'  \
+GPRINT:a:MAX:'Max\:%8.2lf %s\n'  \
+LINE2:b#2E3127FF:'PM2.5'  \
+GPRINT:b:LAST:'Cur\:%8.2lf %s'  \
+GPRINT:b:AVERAGE:'Avg\:%8.2lf %s'  \
+GPRINT:b:MAX:'Max\:%8.2lf %s\n' \
+LINE2:50#FF0000:"Limite 50 μg/m³"

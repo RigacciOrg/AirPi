@@ -1,0 +1,56 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2016 Niccolo Rigacci
+#
+# Return a single sensor value, suitable for SNMP extension.
+#
+# Read PMS5003 sensor data from status file and print the single
+# value requested on the command line. If data is older than
+# MAX_AGE seconds, return an error.
+
+import datetime, sys
+
+# Status file containing the acquired data.
+STATUS = '/var/run/pms5003.status'
+# Status file contains: timestamp data1 data2 data3 ...
+# CF=1 concentrations are calculated at laboratory conditions, assuming particles of just one size.
+# Other concentrations are calculated at generic (mean) atmospheric conditions.
+PMS5003_DATA = ['cf1pm1.0', 'cf1pm2.5', 'cf1pm10', 'pm1.0', 'pm2.5', 'pm10', 'gt00.3um', 'gt00.5um', 'gt01.0um', 'gt02.5um', 'gt05.0um', 'gt10.0um']
+# MAX_AGE (seconds) should be greather than the acquiring
+# interval, but less than twice such interval.
+MAX_AGE = 18 * 60
+
+argv1 = None
+if len(sys.argv) > 1:
+    if sys.argv[1] in PMS5003_DATA:
+        argv1 = sys.argv[1]
+
+if not argv1:
+    print "Usage: pms5003-snmp [%s]" % ("|".join(PMS5003_DATA),)
+    sys.exit(1)
+
+try:
+    fp = open(STATUS, "r")
+    data = fp.readline().strip().split(" ")
+    fp.close()
+except:
+    print "ERROR: Reading status file: %s" % (sys.exc_info()[0])
+    sys.exit(1)
+
+try:
+    value = {}
+    i = 0
+    timestamp = datetime.datetime.strptime(data[i], "%Y-%m-%dT%H:%M:%SZ")
+    for key in PMS5003_DATA:
+        i += 1
+        value[key] = float(data[i])
+except:
+    print "ERROR: Parsing status file: %s" % (sys.exc_info()[0])
+    sys.exit(1)
+
+data_age = (datetime.datetime.utcnow() - timestamp).seconds
+if data_age <= MAX_AGE:
+    print int(value[argv1])
+else:
+    print "ERROR: PMS5003 status file is too old"
