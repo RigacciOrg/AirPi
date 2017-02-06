@@ -1,7 +1,7 @@
 <?php
 
 require_once('functions.php');
-$sensor = get_snmp_data();
+$sensor = get_latest_data();
 
 $pm10_icon = pm10_icon($sensor['pm10']);
 $pressure_icon = pressure_icon($sensor['pressure']);
@@ -20,7 +20,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                     <i class="rof <?= $pm10_icon ?> rof-5x"></i>
                                 </div>
                                 <div class="col-xs-6 text-right">
-                                    <div class="huge"><?= sprintf('%d', $sensor['pm10']) ?></div>
+                                    <div class="huge"><?= my_sprintf('%d', $sensor['pm10']) ?></div>
                                     <div>PM10 &mu;g/m<sup>3</sup></div>
                                 </div>
                             </div>
@@ -35,7 +35,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                     <i class="rof <?= $pressure_icon ?> rof-5x"></i> <i class="rof <?= $tendency_icon ?> rof-5x"></i>
                                 </div>
                                 <div class="col-xs-6 text-right">
-                                    <div class="huge"><?= sprintf('%d', $sensor['pressure']) ?></div>
+                                    <div class="huge"><?= my_sprintf('%d', $sensor['pressure']) ?></div>
                                     <div>Pressione hPa</div>
                                 </div>
                             </div>
@@ -52,7 +52,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                     <i class="fa fa-thermometer fa-5x"></i>
                                 </div>
                                 <div class="col-xs-6 text-right">
-                                    <div class="huge"><?= sprintf('%.2f', $sensor['temperature']) ?></div>
+                                    <div class="huge"><?= my_sprintf('%.2f', $sensor['temperature']) ?></div>
                                     <div>Temperatura °C</div>
                                 </div>
                             </div>
@@ -67,7 +67,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                     <i class="fa fa-tint fa-5x"></i>
                                 </div>
                                 <div class="col-xs-6 text-right">
-                                    <div class="huge"><?= sprintf('%.2f', $sensor['humidity']) ?></div>
+                                    <div class="huge"><?= my_sprintf('%.2f', $sensor['humidity']) ?></div>
                                     <div>Umidit&agrave; %</div>
                                 </div>
                             </div>

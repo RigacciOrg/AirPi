@@ -24,6 +24,6 @@ header('Pragma: public');
 header('Cache-Control: max-age=300');
 header('Expires: '. gmdate('D, d M Y H:i:s \G\M\T', time() + 300));
 header('Content-Type: image/png');
-$cmd = '/usr/local/bin/rrd-graph-' . $graph . ' ' . $period;
+$cmd = '/usr/local/lib/airpi/rrd-graph-' . $graph . ' ' . $period;
 passthru($cmd, $err);
 exit();

@@ -6,6 +6,13 @@ function my_html($str) {
     return(htmlentities($str, ENT_COMPAT, 'UTF-8'));
 }
 
+// Like sprintf(), but accepts only two arguments.
+// Return 'N/A' if value is NULL.
+function my_sprintf($format, $arg) {
+    if ($arg === NULL) return 'N/A';
+    return sprintf($format, $arg);
+}
+
 function pm10_icon($val) {
     if ($val === NULL) return 'rof-car-smoke';
     if     ($val < 20) return 'rof-flower-4';
@@ -34,21 +41,25 @@ function tendency_icon($val) {
     else               return 'rof-arrow-up-3';
 }
 
-function get_snmp_data() {
+// Return the most recent sensor values, from the RRD archive.
+// Return NULL for unavailable values or older than 10 minutes.
+function get_latest_data() {
     $sensors = array('temperature', 'pressure', 'humidity', 'pm10');
     $values = array();
     foreach($sensors as $key) $values[$key] = NULL;
-    $cmd = 'rrdtool lastupdate /var/lib/airpi/airpi-data.rrd';
+    $cmd = 'rrdtool lastupdate /var/lib/airpi/airpi-data-0.rrd';
     exec($cmd, $output, $retval);
-    $val = preg_split('/[\s]+/', trim($output[2]));
-    if (count($val) >= 10) {
-        $timestamp = (int)substr($val[0], 0, -1);
-        if ((time() - $timestamp) < 600) {
-            // TODO: What if values are not available?
-            $values['temperature'] = (float)$val[1] / 1000.0;
-            $values['pressure']    = (float)$val[2] / 1000.0;
-            $values['humidity']    = (float)$val[3] / 1000.0;
-            $values['pm10']        = (float)$val[9];
+    if ($retval == 0) {
+        $val = preg_split('/[\s]+/', trim($output[2]));
+        if (count($val) >= 10) {
+            $timestamp = (int)substr($val[0], 0, -1);
+            if ((time() - $timestamp) < 600) {
+                // See airpi-data-store-rrd script for fields order.
+                $values['temperature'] = ($val[1] == 'U') ? NULL : (float)$val[1] / 1000.0;
+                $values['pressure']    = ($val[2] == 'U') ? NULL : (float)$val[2] / 1000.0;
+                $values['humidity']    = ($val[3] == 'U') ? NULL : (float)$val[3] / 1000.0;
+                $values['pm10']        = ($val[9] == 'U') ? NULL : (float)$val[9];
+            }
         }
     }
     return $values;
@@ -72,10 +83,10 @@ function pressure_diff_3h() {
     $p1 = $db->querySingle($sql1);
     $sql2 = sprintf($sql, $intvl2);
     $p2 = $db->querySingle($sql2);
-    if ($p1 !== FALSE and $p2 !== FALSE) {
-        return $p2 - $p1;
-    } else {
+    if ($p1 == FALSE or $p1 == NULL or $p2 == FALSE or $p2 == NULL) {
         return NULL;
+    } else {
+        return $p2 - $p1;
     }
 }
 
