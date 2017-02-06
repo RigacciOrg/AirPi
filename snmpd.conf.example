@@ -1,0 +1,14 @@
+# Test with: snmpwalk -v 2c -c public 127.0.0.1 'NET-SNMP-EXTEND-MIB::nsExtendOutput1Line."pressure"'
+extend     temperature  /usr/local/lib/airpi/bme280-snmp temperature
+extend     pressure     /usr/local/lib/airpi/bme280-snmp pressure
+extend     humidity     /usr/local/lib/airpi/bme280-snmp humidity
+extend     cputemp      /bin/cat /sys/class/thermal/thermal_zone0/temp
+extend     pm1.0        /usr/local/lib/airpi/pms5003-snmp pm1.0
+extend     pm2.5        /usr/local/lib/airpi/pms5003-snmp pm2.5
+extend     pm10         /usr/local/lib/airpi/pms5003-snmp pm10
+extend     gt00.3um     /usr/local/lib/airpi/pms5003-snmp gt00.3um
+extend     gt00.5um     /usr/local/lib/airpi/pms5003-snmp gt00.5um
+extend     gt01.0um     /usr/local/lib/airpi/pms5003-snmp gt01.0um
+extend     gt02.5um     /usr/local/lib/airpi/pms5003-snmp gt02.5um
+extend     gt05.0um     /usr/local/lib/airpi/pms5003-snmp gt05.0um
+extend     gt10.0um     /usr/local/lib/airpi/pms5003-snmp gt10.0um
