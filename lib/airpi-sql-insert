@@ -1,18 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#---------------------------------------------------------------
-# Copyright (C) 2016 Niccolo Rigacci
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
 #
-# Save monitoring data into an SQLite database.
+# Store sensors data from an AirPi station into an SQLite database.
+# If the database does not exist, it will be created.
+# Data sources names are hard-coded into this source.
 #
 # Data is passed on the command line like that:
 #
-#   airpi-data-store-sql t=19.60,hum=66.5,p=990,...
-#
-#---------------------------------------------------------------
+#   airpi-sql-insert t=19.60,hum=66.5,p=990,...
 
-import datetime, os.path, sqlite3, sys
+import datetime, logging, os.path, sqlite3, sys
 
 SQLITE_DB = '/var/lib/airpi/airpi-data.db'
 BME280_DATA = ['t', 'p', 'hum']
@@ -38,7 +37,7 @@ def sqlcreate(filename):
         con.commit()
         con.close()
     except Exception, e:
-        print "ERROR: %s: Failed to create the SQLite database: %s" % (NAME, str(e),)
+        logging.error(u'%s: Failed to create the SQLite database: %s' % (NAME, str(e)))
         sys.exit(1)
 
 #---------------------------------------------------------------
@@ -58,7 +57,7 @@ try:
     con = sqlite3.connect(SQLITE_DB)
     cur = con.cursor()
 except Exception, e:
-    print "ERROR: %s: Cannot open database: %s" % (NAME, str(e),)
+    logging.error(u'%s: Cannot open database: %s' % (NAME, str(e),))
     sys.exit(1)
 
 for d in data:
@@ -70,13 +69,14 @@ for d in data:
             #print sql
             con.execute(sql)
         else:
-            print 'ERROR: %s: Data "%s" does not contain a valid field' % (NAME, d)
+            logging.warning(u'%s: Data "%s" does not contain a valid field' % (NAME, d))
     except Exception, e:
-        print 'ERROR: %s: Data "%s" caused exception "%s"' % (NAME, d, str(e))
+        logging.warning(u'%s: Data "%s" caused exception "%s"' % (NAME, d, str(e)))
         continue
 
 try:
     con.commit()
     con.close()
 except Exception, e:
-    print 'ERROR: %s: Committing data to database: "%s"' % (NAME, str(e))
+    logging.error(u'%s: Committing data to database: "%s"' % (NAME, str(e)))
+    sys.exit(1)

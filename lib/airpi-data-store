@@ -1,10 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#----------------------------------------------------------------
-# Copyright (C) 2016 Niccolo Rigacci
-#
-# Save AirPi sensors data to permanent storage.
+# Copyright (C) 2016-2017 Niccolo Rigacci
+
+# Save AirPi sensors data to permanent storage, run as cronjob.
 #
 # Read the following sensors:
 #   * PMS5003 Particulate Matter
@@ -12,9 +11,8 @@
 # Write to the following storages (via external scripts):
 #   * SQLite database
 #   * RRD archive
-#----------------------------------------------------------------
 
-import datetime, os.path, subprocess, sys
+import datetime, logging, os.path, subprocess, sys
 
 # Status file containing the data acquired by PMS5003,
 # it contains: timestamp data1 data2 data3 ...
@@ -27,6 +25,9 @@ MAX_AGE = 18 * 60
 PMS5003_DATA = ['cf1pm1.0', 'cf1pm2.5', 'cf1pm10', 'pm1.0', 'pm2.5', 'pm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
 # Data read from BME280 sensor.
 BME280_DATA = ['t', 'p', 'hum']
+
+# Where are the utility scripts.
+LIB_DIR = '/usr/local/lib/airpi'
 
 NAME = os.path.basename(sys.argv[0])
 
@@ -42,33 +43,32 @@ try:
     fp = open(PMS5003_STATUS, "r")
     data = fp.readline().strip().split(" ")
     fp.close()
-except:
-    print "ERROR: %s: Reading PMS5003 status file: %s" % (NAME, sys.exc_info()[0])
+except Exception, e:
+    logging.error(u'%s: Reading PMS5003 status file: %s' % (NAME, str(e)))
 
 try:
     i = 0
     timestamp = datetime.datetime.strptime(data[i], "%Y-%m-%dT%H:%M:%SZ")
     data_age = (datetime.datetime.utcnow() - timestamp).seconds
     if data_age > MAX_AGE:
-        print "WARNING: %s: PMS5003 status file contains old data" % (NAME,)
+        logging.warning(u'%s: PMS5003 status file contains old data' % (NAME,))
     else:
         for key in PMS5003_DATA:
             i += 1
             values[key] = "%0.3f" % (float(data[i]))
-except:
-    print "ERROR: %s: Parsing PMS5003 status file: %s" % (NAME, sys.exc_info()[0])
-
+except Exception, e:
+    logging.error(u'%s: Parsing PMS5003 status file: %s' % (NAME, str(e)))
 
 #----------------------------------------------------------------
 # Get BME280 sensor data (exec program and read output).
 #----------------------------------------------------------------
 try:
-    cmd = ['/usr/local/bin/bme280-snmp']
+    cmd = [os.path.join(LIB_DIR, 'bme280-snmp')]
     subproc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, stderr = subproc.communicate()
     retcode = subproc.returncode
-except:
-    print "ERROR: %s: Failed to exec BME280 read program: %s" % (NAME, sys.exc_info()[0])
+except Exception, e:
+    logging.error(u'%s: Failed to exec BME280 read program: %s' % (NAME, str(e)))
     retcode = -1
 
 if retcode == 0:
@@ -80,7 +80,7 @@ if retcode == 0:
         elif line.startswith('Humidity'):
             values['hum'] = "%0.2f" % (float(line.split(':')[1]))
 else:
-    print "ERROR: %s: Cannot read values from BME280" % (NAME,)
+    logging.error(u'%s: Cannot read values from BME280' % (NAME,))
 
 #----------------------------------------------------------------
 # Store data values into the RRD archive.
@@ -93,11 +93,11 @@ for key in (BME280_DATA + PMS5003_DATA):
         data.append(values[key])
     else:
         data.append('U')
-cmd = ["/usr/local/bin/airpi-data-store-rrd", template, ':'.join(data)]
+cmd = [os.path.join(LIB_DIR, 'airpi-rrdtool-update'), '0', template, ':'.join(data)]
 #print cmd
 retcode = subprocess.call(cmd)
 if retcode != 0:
-    print "ERROR: %s: Storing sensors data into RRD archive failed" % (NAME,)
+    logging.error(u'%s: Storing sensors data into RRD archive failed' % (NAME,))
 
 #----------------------------------------------------------------
 # Store data values into the SQLite database.
@@ -106,8 +106,8 @@ if len(values) > 0:
     data = []
     for key, val in values.iteritems():
         data.append("%s=%s" % (key, val))
-    cmd = ['/usr/local/bin/airpi-data-store-sql', ','.join(data)]
+    cmd = [os.path.join(LIB_DIR, 'airpi-sql-insert'), ','.join(data)]
     #print cmd
     retcode = subprocess.call(cmd)
     if retcode != 0:
-        print "ERROR: %s: Storing sensors data into SQL database failed" % (NAME,)
+        logging.error(u'%s: Storing sensors data into SQL database failed' % (NAME,))

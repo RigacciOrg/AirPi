@@ -1,0 +1,119 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
+# Store sensors data from an AirPi station into an RRD archive.
+# If the archive does not exist, it will be created.
+# Data sources names are hard-coded into this source.
+#
+# * Replace dots (".") in data source names with underscores.
+# * Some specific data source values are float: multiply them
+#   by 1000 and convert to int before storing in RRD.
+# * Use current localtime or the optional timestamp.
+
+import logging, os.path, subprocess, sys, time
+
+# RRD filename template: will be filled with station_id.
+RRD_NAME_TEMPLATE = '/var/lib/airpi/airpi-data-%s.rrd'
+# Some data must be multiplied by 1000.
+MULTPLY_BY_1000 = ['t', 'p', 'hum']
+
+NAME = os.path.basename(sys.argv[0])
+
+if len(sys.argv) < 4:
+    print u'Usage: %s STATION_ID ds_name[:ds-name]... value[:value]... [TIMESTAMP]' % (NAME)
+    sys.exit(1)
+
+rrd_archive = RRD_NAME_TEMPLATE % (sys.argv[1],)
+if len(sys.argv) > 4:
+    timestamp = sys.argv[4]
+else:
+    timestamp = str(int(time.time()))
+
+# Set logging for main program.
+logging.getLogger().setLevel(logging.INFO)
+
+#---------------------------------------------------------------
+# Create the RRD archive.
+#---------------------------------------------------------------
+def rrdcreate(filename, start):
+    data_sources = (
+      'DS:t:GAUGE:600:-40000:85000',    # BME280 temperature: -40~85 °C
+      'DS:p:GAUGE:600:300000:1100000',  # BME280 pressure: 300~1100 hPa
+      'DS:hum:GAUGE:600:0:100000',      # BME280 humidity: 0~100 %
+      'DS:cf1pm1_0:GAUGE:600:0:3000',   #  PM1.0 only (laboratory test), ug/m3
+      'DS:cf1pm2_5:GAUGE:600:0:3000',   #  PM2.5 only (laboratory test), ug/m3
+      'DS:cf1pm10:GAUGE:600:0:3000',    #  PM10  only (laboratory test), ug/m3
+      'DS:pm1_0:GAUGE:600:0:3000',      #  PM1.0 standard atmosphere, ug/m3
+      'DS:pm2_5:GAUGE:600:0:3000',      #  PM2.5 standard atmosphere, ug/m3
+      'DS:pm10:GAUGE:600:0:3000',       #  PM10  standard atmosphere, ug/m3
+      'DS:gt0_3um:GAUGE:600:0:U',       #  Particles >  0.3 um, count/0.1 liter
+      'DS:gt0_5um:GAUGE:600:0:U',       #  Particles >  0.5 um, count/0.1 liter
+      'DS:gt1_0um:GAUGE:600:0:U',       #  Particles >  1.0 um, count/0.1 liter
+      'DS:gt2_5um:GAUGE:600:0:U',       #  Particles >  2.5 um, count/0.1 liter
+      'DS:gt5um:GAUGE:600:0:U',         #  Particles >  5.0 um, count/0.1 liter
+      'DS:gt10um:GAUGE:600:0:U'         #  Particles > 10.0 um, count/0.1 liter
+    )
+    # RRA:AVERAGE|MIN|MAX|LAST:xff:steps:rows
+    #   xff: requires 1/2 = 0.5 ratio unknown/data to keep data
+    #   steps: primary data points used to build a consolidated one
+    #   rows: how many data values are kept in an RRA
+    # (5 * 1)   = ( 5 min average) * 600 =~  2 days
+    # (5 * 6)   = (30 min average) * 700 =~ 14 days
+    # (5 * 24)  = ( 2 h   average) * 775 =~  2 months
+    # (5 * 288) = (24 h   average) * 797 =~  2 years
+    rr_archives = (
+      'RRA:AVERAGE:0.5:1:600',
+      'RRA:AVERAGE:0.5:6:700',
+      'RRA:AVERAGE:0.5:24:775',
+      'RRA:AVERAGE:0.5:288:797',
+      'RRA:MIN:0.5:1:600',
+      'RRA:MIN:0.5:6:700',
+      'RRA:MIN:0.5:24:775',
+      'RRA:MIN:0.5:288:797',
+      'RRA:MAX:0.5:1:600',
+      'RRA:MAX:0.5:6:700',
+      'RRA:MAX:0.5:24:775',
+      'RRA:MAX:0.5:288:797'
+    )
+    cmd = ['rrdtool', 'create', filename, '--step', '300', '--start', start]
+    cmd += data_sources + rr_archives
+    #print cmd
+    retcode = subprocess.call(cmd)
+    if retcode != 0:
+        logging.error("%s: Failed to create the RRD archive" % (NAME,))
+        sys.exit(retcode)
+
+#---------------------------------------------------------------
+# Main.
+#---------------------------------------------------------------
+if not os.path.isfile(rrd_archive):
+    start = str(int(timestamp) - 10);
+    rrdcreate(rrd_archive, start)
+
+names = sys.argv[2].split(':')
+values = sys.argv[3].split(':')
+
+data = []
+data.append(timestamp)
+try:
+    for i in range(0, len(names)):
+        if names[i] in MULTPLY_BY_1000:
+            data.append(str(int(float(values[i]) * 1000)))
+        else:
+            data.append(str(int(float(values[i]))))
+except Exception, e:
+    logging.error("%s: Error parsing input data: %s" % (NAME, str(e),))
+
+if (len(data) - 1) != len(names):
+    logging.error("%s: Missing some data" % (NAME,))
+    sys.exit(1)
+else:
+    template = ':'.join(names).replace('.', '_')
+    cmd = ["rrdtool", "update", rrd_archive, "--template", template, ':'.join(data)]
+    #print cmd
+    retcode = subprocess.call(cmd)
+    if retcode != 0:
+        logging.error("%s: Failed to update the RRD archive" % (NAME,))
+        sys.exit(retcode)
