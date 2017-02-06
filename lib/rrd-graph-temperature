@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RRD_ARCHVIE='/var/lib/airpi/airpi-data.rrd'
+RRD_ARCHVIE='/var/lib/airpi/airpi-data-0.rrd'
 TIMESTAMP="$(/bin/date '+%Y-%m-%d %H:%M')"
 
 case "$1" in

@@ -4,7 +4,7 @@
 import datetime, os, os.path, re, subprocess, sys, time
 
 sql_archive = '/var/lib/airpi/airpi-data.db'
-rrd_archive = '/var/lib/airpi/airpi-data.rrd'
+rrd_archive = '/var/lib/airpi/airpi-data-0.rrd'
 
 def usage():
     print u'Usage: %s "YYYY-mm-dd HH:MM"' % (os.path.basename(sys.argv[0]))
