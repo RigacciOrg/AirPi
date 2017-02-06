@@ -1,0 +1,108 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Export AirPi data from SQLite database to a remote DB server
+# using HTTP as the transport protocol.
+#
+#  * A request is executed to know the timestamp of most recent
+#    data stored into the remote databse.
+#  * A second request is executed to actually post the data,
+#    ordered by timestamp. Each transfer is limited at max
+#    XFER_DAYS of data.
+
+import datetime, json, logging, os.path, sqlite3, sys, requests
+
+MY_ID       = 'prato-volta'
+MY_PASS     = 'ahpoo2Co'
+
+SQLITE_DB   = '/var/lib/airpi/airpi-data.db'
+REQUEST_URL = 'https://www.campibisenzio5stelle.it/airpi/update.php'
+UTC_FORMAT  = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
+XFER_DAYS   = 1
+
+NAME = os.path.basename(sys.argv[0])
+
+# Disable warning about missing HTTPS valid certificate.
+requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+# Set logging for main program and imported modules.
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+# Connect to the SQLite database.
+try:
+    con = sqlite3.connect(SQLITE_DB)
+    cur = con.cursor()
+except Exception, e:
+    logging.error("%s: Cannot open local database: %s" % (NAME, str(e),))
+    sys.exit(1)
+
+# Get the timestamp (in UTC_FORMAT) of most recent data in remote database.
+logging.info("%s: Communicating with %s" % (NAME, REQUEST_URL.split('/')[2]))
+r = requests.post(REQUEST_URL, verify=False, data={'login': MY_ID, 'password': MY_PASS})
+if r.status_code != 200:
+    logging.error("%s: HTTP Request Failed with code %d" % (NAME, r.status_code))
+    sys.exit(1)
+try:
+    last_utc_timestamp = r.json()['last_utc_timestamp']
+except:
+    logging.error("%s: Cannot parse 'last_utc_timestamp' in HTTP response" % (NAME,))
+    logging.error("%s: HTTP Response: %s" % (NAME, r.text))
+    sys.exit(1)
+
+# Convert UTC_FORMAT string into datetime object.
+try:
+    remote_dt = datetime.datetime.strptime(last_utc_timestamp, UTC_FORMAT)
+except:
+    logging.error("%s: Cannot parse last_utc_timestamp: %s" % (NAME, last_utc_timestamp))
+    sys.exit(1)
+
+# Remote database should not contain data from the future.
+utcnow_dt = datetime.datetime.utcnow()
+if remote_dt > utcnow_dt:
+    logging.error("%s: Remote database has data from the future (%s > %s)" % (NAME, remote_dt.strftime(UTC_FORMAT), utcnow_dt.strftime(UTC_FORMAT)))
+    sys.exit(1)
+
+logging.info("%s: Latest timestamp in remote database: %s" % (NAME, remote_dt.strftime(UTC_FORMAT)))
+
+# Get the first local timestamp to be transferred.
+sql = "SELECT min(timestamp) FROM data WHERE datetime(timestamp) > datetime(?)"
+#print "%s (%s)" % (sql, remote_dt.strftime(UTC_FORMAT))
+try:
+    cur.execute(sql, (remote_dt.strftime(UTC_FORMAT),))
+    timestamp = cur.fetchone()[0];
+    first_dt = datetime.datetime.strptime(timestamp, UTC_FORMAT)
+except Exception, e:
+    logging.error("%s: Error reading the database: %s" % (NAME, str(e),))
+    sys.exit(1)
+
+# Limit the transfer to XFER_DAYS of data.
+limit_dt = first_dt + datetime.timedelta(days=XFER_DAYS)
+logging.info("%s: Limit transfer to %s" % (NAME, limit_dt.strftime(UTC_FORMAT)))
+
+# Extract data to be transferred.
+sql  = "SELECT timestamp, type, value FROM data"
+sql += " WHERE datetime(timestamp) >= datetime(?) AND datetime(timestamp) < datetime(?)"
+sql += " ORDER BY timestamp, type"
+#print "%s (%s, %s)" % (sql, first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT))
+try:
+    cur.execute(sql, (first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT)))
+    sensors_data = cur.fetchall();
+except Exception, e:
+    logging.error("%s: Error reading the database: %s" % (NAME, str(e),))
+    sys.exit(1)
+con.close()
+
+# Post the extracted data to the remote server.
+logging.info("%s: Data values to be transferred: %d" % (NAME, len(sensors_data)))
+post_data = {
+    'login': MY_ID,
+    'password': MY_PASS,
+    'sensors_data': json.dumps(sensors_data)
+}
+r = requests.post(REQUEST_URL, verify=False, data=post_data)
+if r.status_code != 200:
+    logging.error("%s: HTTP Post Data Failed with code %d" % (NAME, r.status_code))
+    sys.exit(1)
+#print r.text
+
+sys.exit(0)
