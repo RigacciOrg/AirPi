@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016 Niccolo Rigacci
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
 #
 # Return a single sensor value, suitable for SNMP extension.
 #
@@ -12,7 +12,7 @@
 import datetime, sys
 
 # Status file containing the acquired data.
-STATUS = '/var/run/pms5003.status'
+STATUS = '/run/pms5003.status'
 # Status file contains: timestamp data1 data2 data3 ...
 # CF=1 concentrations are calculated at laboratory conditions, assuming particles of just one size.
 # Other concentrations are calculated at generic (mean) atmospheric conditions.

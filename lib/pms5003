@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016 Niccolo Rigacci
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
 #
 # Data acquisition program for Plantower PMS5003 particulate
 # matter sensor. Developend and tested on the Raspberry Pi.
@@ -65,10 +65,10 @@ SERIAL_TIMEOUT = 2.0
 AVERAGE_FIELDS = ['data1', 'data2', 'data3', 'data4', 'data5', 'data6', 'data7', 'data8', 'data9', 'data10', 'data11', 'data12']
 
 # Status file where to save the last averaged reading.
-STATUS_FILE = "/run/pms5003.status"
+STATUS_FILE = '/run/pms5003.status'
 
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = 'DEBUG'
 # Log to stdout or to file/syslog.
 LOG_TO_STDOUT = False
 # False for syslog logging, filename for file logging.

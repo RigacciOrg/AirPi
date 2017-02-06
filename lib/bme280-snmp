@@ -1,6 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2016-2017 Niccolo Rigacci
+
+# Get BME280 sensors value (pressure, temperature and humidity).
+# Results are written to a cache file and read from it if fresh enough.
+#
+# Usage: bme280-snmp
+#        bme280-snmp {temperature|pressure|humidity}
+
 import os, os.path, pickle, sys
 from Adafruit_BME280 import *
 
