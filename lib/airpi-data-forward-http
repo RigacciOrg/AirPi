@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
 # Export AirPi data from SQLite database to a remote DB server
 # using HTTP as the transport protocol.
 #
@@ -10,17 +12,28 @@
 #    ordered by timestamp. Each transfer is limited at max
 #    XFER_DAYS of data.
 
-import datetime, json, logging, os.path, sqlite3, sys, requests
+import ConfigParser, datetime, json, logging, os.path, sqlite3, sys, requests
 
-MY_ID       = 'prato-volta'
-MY_PASS     = 'ahpoo2Co'
-
-SQLITE_DB   = '/var/lib/airpi/airpi-data.db'
-REQUEST_URL = 'https://www.campibisenzio5stelle.it/airpi/update.php'
-UTC_FORMAT  = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
-XFER_DAYS   = 1
-
+UTC_FORMAT = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
+# This is the program name.
 NAME = os.path.basename(sys.argv[0])
+# Read configuration from this file.
+CFG_FILE = '/etc/airpi/airpi.cfg'
+
+DEFAULTS = {
+    'SQLITE_DB':   '/var/lib/airpi/airpi-data.db',
+    'LOGIN':       'station-name',
+    'PASSWORD':    'station-secret',
+    'REQUEST_URL': 'https://www.rigacci.org/airpi/update.php',
+    'XFER_DAYS':   '2'
+}
+config = ConfigParser.RawConfigParser(DEFAULTS)
+config.read(CFG_FILE)
+LOGIN       = config.get('http_forward', 'LOGIN')
+PASSWORD    = config.get('http_forward', 'PASSWORD')
+REQUEST_URL = config.get('http_forward', 'REQUEST_URL')
+XFER_DAYS   = config.getint('http_forward', 'XFER_DAYS')
+SQLITE_DB   = config.get('sqlite', 'SQLITE_DB')
 
 # Disable warning about missing HTTPS valid certificate.
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
@@ -38,7 +51,7 @@ except Exception, e:
 
 # Get the timestamp (in UTC_FORMAT) of most recent data in remote database.
 logging.info("%s: Communicating with %s" % (NAME, REQUEST_URL.split('/')[2]))
-r = requests.post(REQUEST_URL, verify=False, data={'login': MY_ID, 'password': MY_PASS})
+r = requests.post(REQUEST_URL, verify=False, data={'login': LOGIN, 'password': PASSWORD})
 if r.status_code != 200:
     logging.error("%s: HTTP Request Failed with code %d" % (NAME, r.status_code))
     sys.exit(1)
@@ -95,8 +108,8 @@ con.close()
 # Post the extracted data to the remote server.
 logging.info("%s: Data values to be transferred: %d" % (NAME, len(sensors_data)))
 post_data = {
-    'login': MY_ID,
-    'password': MY_PASS,
+    'login': LOGIN,
+    'password': PASSWORD,
     'sensors_data': json.dumps(sensors_data)
 }
 r = requests.post(REQUEST_URL, verify=False, data=post_data)

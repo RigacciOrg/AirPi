@@ -70,15 +70,10 @@ if (array_key_exists('period', $_REQUEST)) {
             $cmd .= ' ' . escapeshellarg(implode(',', $req_data));
         }
         //print $cmd . "<br>\n"; exit;
-        header("Content-Type: text/csv");
+        header("Content-Type: text/csv; charset=utf-8");
         $filename = 'airpi_' . $begin_date . '-' . $end_date . '.csv';
         header("Content-Disposition: attachment; filename=\"$filename\"");
         passthru($cmd, $ret);
         exit();
     }
-}
-
-
-function my_html($string) {
-    return htmlentities($string, ENT_COMPAT, 'UTF-8');
 }
