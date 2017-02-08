@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016-2017 Niccolo Rigacci
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
 
 # Save AirPi sensors data to permanent storage, run as cronjob.
 #
