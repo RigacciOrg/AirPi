@@ -10,9 +10,9 @@
 # * Replace dots (".") in data source names with underscores.
 # * Some specific data source values are float: multiply them
 #   by 1000 and convert to int before storing in RRD.
-# * Use current localtime or the optional timestamp.
+# * Use the provided timestamp (seconds from Unix epoch UTC).
 
-import logging, os.path, subprocess, sys, time
+import logging, logging.handlers, os.path, subprocess, sys, time
 
 # RRD filename template: will be filled with station_id.
 RRD_NAME_TEMPLATE = '/var/lib/airpi/airpi-data-%s.rrd'
@@ -21,17 +21,16 @@ MULTPLY_BY_1000 = ['t', 'p', 'hum']
 
 NAME = os.path.basename(sys.argv[0])
 
-if len(sys.argv) < 4:
-    print u'Usage: %s STATION_ID ds_name[:ds-name]... value[:value]... [TIMESTAMP]' % (NAME)
+if len(sys.argv) < 5:
+    print u'Usage: %s TIMESTAMP STATION_ID ds_name[:ds-name]... value[:value]...' % (NAME)
     sys.exit(1)
 
-rrd_archive = RRD_NAME_TEMPLATE % (sys.argv[1],)
-if len(sys.argv) > 4:
-    timestamp = sys.argv[4]
-else:
-    timestamp = str(int(time.time()))
+timestamp = sys.argv[1]
+rrd_archive = RRD_NAME_TEMPLATE % (sys.argv[2],)
 
-# Set logging for main program.
+# Set logging for main program, to syslog.
+handler = logging.handlers.SysLogHandler(address='/dev/log')
+logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.INFO)
 
 #---------------------------------------------------------------
@@ -92,8 +91,8 @@ if not os.path.isfile(rrd_archive):
     start = str(int(timestamp) - 10);
     rrdcreate(rrd_archive, start)
 
-names = sys.argv[2].split(':')
-values = sys.argv[3].split(':')
+names = sys.argv[3].split(':')
+values = sys.argv[4].split(':')
 
 data = []
 data.append(timestamp)

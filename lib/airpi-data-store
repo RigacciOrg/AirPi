@@ -12,7 +12,7 @@
 #   * SQLite database
 #   * RRD archive
 
-import datetime, logging, os.path, subprocess, sys
+import datetime, logging, os.path, subprocess, sys, time
 
 # Status file containing the data acquired by PMS5003,
 # it contains: timestamp data1 data2 data3 ...
@@ -83,6 +83,12 @@ else:
     logging.error(u'%s: Cannot read values from BME280' % (NAME,))
 
 #----------------------------------------------------------------
+# Timestamp: seconds since Unix epoch and UTC timestamp string.
+#----------------------------------------------------------------
+time_now = int(time.time())
+timestamp_utc_now = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time_now))
+
+#----------------------------------------------------------------
 # Store data values into the RRD archive.
 #----------------------------------------------------------------
 # Template which specifies what data sources and in what order.
@@ -93,7 +99,7 @@ for key in (BME280_DATA + PMS5003_DATA):
         data.append(values[key])
     else:
         data.append('U')
-cmd = [os.path.join(LIB_DIR, 'airpi-rrdtool-update'), '0', template, ':'.join(data)]
+cmd = [os.path.join(LIB_DIR, 'airpi-rrdtool-update'), str(time_now), '0', template, ':'.join(data)]
 #print cmd
 retcode = subprocess.call(cmd)
 if retcode != 0:
@@ -106,7 +112,7 @@ if len(values) > 0:
     data = []
     for key, val in values.iteritems():
         data.append("%s=%s" % (key, val))
-    cmd = [os.path.join(LIB_DIR, 'airpi-sql-insert'), ','.join(data)]
+    cmd = [os.path.join(LIB_DIR, 'airpi-sql-insert'), timestamp_utc_now, ','.join(data)]
     #print cmd
     retcode = subprocess.call(cmd)
     if retcode != 0:
