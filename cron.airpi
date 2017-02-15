@@ -1,2 +1,6 @@
-# Store sensors data into SQL and RRD databases.
-*/5 * * * *    root    /usr/local/bin/airpi-data-store
+# Store sensors data into SQL and RRD local databases.
+*/5 * * * *     root    /usr/local/lib/airpi/airpi-data-store
+
+# Forward sensors data via HTTP and MQTT protocol.
+2,12,22,32,42,52 * * * *    root    /usr/local/lib/airpi/airpi-data-http-post
+3,13,23,33,43,53 * * * *    root    /usr/local/lib/airpi/airpi-data-mqtt-pub

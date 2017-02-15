@@ -9,7 +9,7 @@ import datetime, os.path, sqlite3, sys
 
 SQLITE_DB = '/var/lib/airpi/airpi-data.db'
 BME280_DATA = ['t', 'p', 'hum']
-PMS5003_DATA = ['pm1.0', 'pm2.5', 'pm10', 'apm1.0', 'apm2.5', 'apm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
+PMS5003_DATA = ['pm1.0', 'pm2.5', 'pm10', 'cf1pm1.0', 'cf1pm2.5', 'cf1pm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
 VALID_DATA = BME280_DATA + PMS5003_DATA
 NAME = os.path.basename(sys.argv[0])
 

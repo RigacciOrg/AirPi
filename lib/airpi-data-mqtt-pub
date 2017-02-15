@@ -1,0 +1,137 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
+# Export AirPi data from SQLite database to a remote MQTT server
+
+import calendar, ConfigParser, datetime, logging, os.path, pytz, sqlite3, subprocess, sys
+
+UTC_FORMAT = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
+NAME = os.path.basename(sys.argv[0])
+CFG_FILE = '/etc/airpi/airpi.cfg'
+TIMESTAMP_FILE = '/var/lib/airpi/mqtt-timestamp'
+
+DEFAULTS = {
+    'SQLITE_DB':     '/var/lib/airpi/airpi-data.db',
+    'MQTT_LOGIN':    'station-name',
+    'MQTT_PASSWORD': 'station-secret',
+    'MQTT_HOST':     'mqtt.rigacci.org',
+    'XFER_MAX_DAYS': '1'
+}
+config = ConfigParser.RawConfigParser(DEFAULTS)
+config.read(CFG_FILE)
+MQTT_LOGIN    = config.get('mqtt', 'MQTT_LOGIN')
+MQTT_PASSWORD = config.get('mqtt', 'MQTT_PASSWORD')
+MQTT_HOST     = config.get('mqtt', 'MQTT_HOST')
+XFER_MAX_DAYS = config.getint('mqtt', 'XFER_MAX_DAYS')
+SQLITE_DB     = config.get('sqlite', 'SQLITE_DB')
+
+# Set logging for main program and imported modules.
+logging.getLogger().setLevel(logging.INFO)
+
+#---------------------------------------------------------------
+# Publish pm2.5 and pm10 data via MQTT protocol.
+# Message format is: "id;pm2.5;pm10;[timestamp]" where
+# timestamp is milliseconds from Unix epoch UTC.
+#---------------------------------------------------------------
+def upload_data(group_data, group_ts):
+    if 'pm2.5' in group_data.keys() and 'pm10' in group_data.keys():
+        ts = datetime.datetime.strptime(group_ts, UTC_FORMAT)
+        timestamp = calendar.timegm(ts.timetuple())
+        msg = '%s;%s;%s;%s000' % (str(2), group_data['pm2.5'], group_data['pm10'], timestamp)
+        cmd = ['mosquitto_pub', '-h', MQTT_HOST, '-t', 'outSensorTopic', '-u', MQTT_LOGIN, '-P', MQTT_PASSWORD, '-m', msg]
+        logging.debug('%s: Executing: %s' % (NAME, ' '.join(cmd)))
+        try:
+            retcode = subprocess.call(cmd)
+        except Exception, e:
+            logging.error('%s: Exec mosquitto_pub: %s' % (NAME, str(e),))
+            retcode = -1
+        if retcode != 0:
+            logging.error('%s: MQTT publishing failed with code %d' % (NAME, retcode))
+            sys.exit(1)
+
+#---------------------------------------------------------------
+# Main
+#---------------------------------------------------------------
+# Connect to the SQLite database.
+try:
+    con = sqlite3.connect(SQLITE_DB)
+    cur = con.cursor()
+except Exception, e:
+    logging.error("%s: Cannot open local database: %s" % (NAME, str(e),))
+    sys.exit(1)
+
+# Get the timestamp of latest uploaded data, in UTC_FORMAT.
+try:
+    with open(TIMESTAMP_FILE) as f:
+        timestamp = f.readline().strip()
+    # Make a naive datetime (without timezone), but indicates UTC.
+    latest_naive = datetime.datetime.strptime(timestamp, UTC_FORMAT)
+except Exception, e:
+    logging.error('%s: Cannot get timestamp: %s' % (NAME, str(e),))
+    latest_naive = datetime.datetime.strptime('1970-01-01T00:00:00Z', UTC_FORMAT)
+logging.info('%s: Latest upload: %s' % (NAME, latest_naive.strftime(UTC_FORMAT)))
+
+# Latest timestamp should not be in the future.
+latest_utc = latest_naive.replace(tzinfo=pytz.utc)
+now_utc = datetime.datetime.now(tz=pytz.utc)
+if latest_utc > now_utc:
+    logging.error('%s: Latest upload was in the future (%s > %s)' % (NAME, latest_utc.strftime(UTC_FORMAT), now_utc.strftime(UTC_FORMAT)))
+    sys.exit(1)
+
+# Get the timestamp of first data to be transferred.
+sql = 'SELECT min(timestamp) FROM data WHERE datetime(timestamp) > datetime(?)'
+print "%s (%s)" % (sql, latest_naive.strftime(UTC_FORMAT))
+try:
+    cur.execute(sql, (latest_naive.strftime(UTC_FORMAT),))
+    timestamp = cur.fetchone()[0];
+except Exception, e:
+    logging.error('%s: Error reading the database: %s' % (NAME, str(e)))
+    sys.exit(1)
+if timestamp == None:
+    logging.error('%s: No data to be transferred' % (NAME,))
+    sys.exit(0)
+
+# Limit the transfer to XFER_MAX_DAYS of data.
+first_dt = datetime.datetime.strptime(timestamp, UTC_FORMAT)
+limit_dt = first_dt + datetime.timedelta(days=XFER_MAX_DAYS)
+logging.info('%s: Transfer data from %s to %s' % (NAME, first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT)))
+
+# Extract data to be transferred.
+# Use naive datetime objects converted to string because
+# the database does not use timezone in timestamp field.
+sql  = "SELECT timestamp, type, value FROM data"
+sql += " WHERE datetime(timestamp) >= datetime(?) AND datetime(timestamp) < datetime(?)"
+sql += " ORDER BY timestamp, type"
+#print "%s (%s, %s)" % (sql, first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT))
+try:
+    cur.execute(sql, (first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT)))
+    sensors_data = cur.fetchall();
+except Exception, e:
+    logging.error('%s: Error reading the database: %s' % (NAME, str(e),))
+    sys.exit(1)
+con.close()
+logging.debug('%s: Selected data values: %d' % (NAME, len(sensors_data)))
+
+# Publish data to the remote server, grouped by timestamp.
+group_data = {}
+group_ts = None
+for row in sensors_data:
+    # row = (u'2017-01-12T17:45:03Z', u'gt0.3um', 5236.31)
+    timestamp = row[0]
+    key = row[1]
+    val = row[2]
+    if timestamp != group_ts:
+        upload_data(group_data, group_ts)
+        group_data = {}
+        group_ts = timestamp
+    group_data[key] = val
+upload_data(group_data, group_ts)
+
+# Update the timestamp of latest uploaded data.
+if group_ts != None:
+    with open(TIMESTAMP_FILE, 'w') as f:
+        f.write(group_ts + '\n')
+
+sys.exit(0)

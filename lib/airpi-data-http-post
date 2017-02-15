@@ -10,29 +10,27 @@
 #    data stored into the remote databse.
 #  * A second request is executed to actually post the data,
 #    ordered by timestamp. Each transfer is limited at max
-#    XFER_DAYS of data.
+#    HTTP_XFER_MAX_DAYS of data.
 
 import ConfigParser, datetime, json, logging, os.path, sqlite3, sys, requests
 
 UTC_FORMAT = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
-# This is the program name.
 NAME = os.path.basename(sys.argv[0])
-# Read configuration from this file.
 CFG_FILE = '/etc/airpi/airpi.cfg'
 
 DEFAULTS = {
     'SQLITE_DB':   '/var/lib/airpi/airpi-data.db',
-    'LOGIN':       'station-name',
-    'PASSWORD':    'station-secret',
-    'REQUEST_URL': 'https://www.rigacci.org/airpi/update.php',
-    'XFER_DAYS':   '2'
+    'HTTP_LOGIN':       'station-name',
+    'HTTP_PASSWORD':    'station-secret',
+    'HTTP_REQUEST_URL': 'https://www.rigacci.org/airpi/update.php',
+    'HTTP_XFER_MAX_DAYS':   '2'
 }
 config = ConfigParser.RawConfigParser(DEFAULTS)
 config.read(CFG_FILE)
-LOGIN       = config.get('http_forward', 'LOGIN')
-PASSWORD    = config.get('http_forward', 'PASSWORD')
-REQUEST_URL = config.get('http_forward', 'REQUEST_URL')
-XFER_DAYS   = config.getint('http_forward', 'XFER_DAYS')
+HTTP_LOGIN         = config.get('http_forward', 'HTTP_LOGIN')
+HTTP_PASSWORD      = config.get('http_forward', 'HTTP_PASSWORD')
+HTTP_REQUEST_URL   = config.get('http_forward', 'HTTP_REQUEST_URL')
+HTTP_XFER_MAX_DAYS = config.getint('http_forward', 'HTTP_XFER_MAX_DAYS')
 SQLITE_DB   = config.get('sqlite', 'SQLITE_DB')
 
 # Disable warning about missing HTTPS valid certificate.
@@ -49,24 +47,24 @@ except Exception, e:
     logging.error("%s: Cannot open local database: %s" % (NAME, str(e),))
     sys.exit(1)
 
-# Get the timestamp (in UTC_FORMAT) of most recent data in remote database.
-logging.info("%s: Communicating with %s" % (NAME, REQUEST_URL.split('/')[2]))
-r = requests.post(REQUEST_URL, verify=False, data={'login': LOGIN, 'password': PASSWORD})
+# Get the timestamp (UTC_FORMAT string) of latest data in remote database.
+logging.info("%s: Communicating with %s" % (NAME, HTTP_REQUEST_URL.split('/')[2]))
+r = requests.post(HTTP_REQUEST_URL, verify=False, data={'login': HTTP_LOGIN, 'password': HTTP_PASSWORD})
 if r.status_code != 200:
     logging.error("%s: HTTP Request Failed with code %d" % (NAME, r.status_code))
     sys.exit(1)
 try:
-    last_utc_timestamp = r.json()['last_utc_timestamp']
+    latest_timestamp = r.json()['latest_timestamp']
 except:
-    logging.error("%s: Cannot parse 'last_utc_timestamp' in HTTP response" % (NAME,))
+    logging.error("%s: Cannot parse 'latest_timestamp' in HTTP response" % (NAME,))
     logging.error("%s: HTTP Response: %s" % (NAME, r.text))
     sys.exit(1)
 
-# Convert UTC_FORMAT string into datetime object.
+# Convert UTC_FORMAT string into naive (without timezone) datetime object.
 try:
-    remote_dt = datetime.datetime.strptime(last_utc_timestamp, UTC_FORMAT)
+    remote_dt = datetime.datetime.strptime(latest_timestamp, UTC_FORMAT)
 except:
-    logging.error("%s: Cannot parse last_utc_timestamp: %s" % (NAME, last_utc_timestamp))
+    logging.error("%s: Cannot parse latest_timestamp: %s" % (NAME, latest_timestamp))
     sys.exit(1)
 
 # Remote database should not contain data from the future.
@@ -74,7 +72,6 @@ utcnow_dt = datetime.datetime.utcnow()
 if remote_dt > utcnow_dt:
     logging.error("%s: Remote database has data from the future (%s > %s)" % (NAME, remote_dt.strftime(UTC_FORMAT), utcnow_dt.strftime(UTC_FORMAT)))
     sys.exit(1)
-
 logging.info("%s: Latest timestamp in remote database: %s" % (NAME, remote_dt.strftime(UTC_FORMAT)))
 
 # Get the first local timestamp to be transferred.
@@ -88,8 +85,8 @@ except Exception, e:
     logging.error("%s: Error reading the database: %s" % (NAME, str(e),))
     sys.exit(1)
 
-# Limit the transfer to XFER_DAYS of data.
-limit_dt = first_dt + datetime.timedelta(days=XFER_DAYS)
+# Limit the transfer to HTTP_XFER_MAX_DAYS of data.
+limit_dt = first_dt + datetime.timedelta(days=HTTP_XFER_MAX_DAYS)
 logging.info("%s: Limit transfer to %s" % (NAME, limit_dt.strftime(UTC_FORMAT)))
 
 # Extract data to be transferred.
@@ -108,11 +105,11 @@ con.close()
 # Post the extracted data to the remote server.
 logging.info("%s: Data values to be transferred: %d" % (NAME, len(sensors_data)))
 post_data = {
-    'login': LOGIN,
-    'password': PASSWORD,
+    'login': HTTP_LOGIN,
+    'password': HTTP_PASSWORD,
     'sensors_data': json.dumps(sensors_data)
 }
-r = requests.post(REQUEST_URL, verify=False, data=post_data)
+r = requests.post(HTTP_REQUEST_URL, verify=False, data=post_data)
 if r.status_code != 200:
     logging.error("%s: HTTP Post Data Failed with code %d" % (NAME, r.status_code))
     sys.exit(1)
