@@ -22,11 +22,14 @@ function pm10_icon($val) {
     else               return 'rof-skull';
 }
 
+// Choose a wather icon upon the absolute pressure value.
+// TODO: Pressure should be adjusted by elevation above sea level.
+// TODO: The weater icon should be choosen by pressure variation, humidity, etc.
 function pressure_icon($val) {
     if   ($val === NULL) return 'rof-weather';
-    if     ($val <  980) return 'rof-weather-clouds-rain';
+    if     ($val <  990) return 'rof-weather-clouds-rain';
     elseif ($val < 1000) return 'rof-weather-clouds';
-    elseif ($val < 1020) return 'rof-weather-sun-cloud';
+    elseif ($val < 1010) return 'rof-weather-sun-cloud';
     else                 return 'rof-weather-sun';
 }
 
@@ -42,40 +45,56 @@ function tendency_icon($val) {
 }
 
 // Return the most recent sensor values, from the RRD archive.
-// Return NULL for unavailable values or older than 10 minutes.
-function get_latest_data() {
+// Return NULL for unavailable values or older than STALE_RRD seconds.
+function get_latest_data($station_id='0') {
+    if (!preg_match('/^\d{1,3}$/', $station_id)) $station_id = '0';
     $sensors = array('temperature', 'pressure', 'humidity', 'pm10');
     $values = array();
     foreach($sensors as $key) $values[$key] = NULL;
-    $cmd = 'rrdtool lastupdate /var/lib/airpi/airpi-data-0.rrd';
-    exec($cmd, $output, $retval);
-    if ($retval == 0) {
-        $val = preg_split('/[\s]+/', trim($output[2]));
-        if (count($val) >= 10) {
-            $timestamp = (int)substr($val[0], 0, -1);
-            if ((time() - $timestamp) < 600) {
-                // See airpi-data-store-rrd script for fields order.
-                $values['temperature'] = ($val[1] == 'U') ? NULL : (float)$val[1] / 1000.0;
-                $values['pressure']    = ($val[2] == 'U') ? NULL : (float)$val[2] / 1000.0;
-                $values['humidity']    = ($val[3] == 'U') ? NULL : (float)$val[3] / 1000.0;
-                $values['pm10']        = ($val[9] == 'U') ? NULL : (float)$val[9];
+    $rrd = sprintf('/var/lib/airpi/airpi-data-%d.rrd', $station_id);
+    $cmd = 'rrdtool lastupdate ' . escapeshellarg($rrd);
+    if (file_exists($rrd)) {
+        exec($cmd, $output, $retval);
+        if ($retval == 0) {
+            $val = preg_split('/[\s]+/', trim($output[2]));
+            if (count($val) >= 10) {
+                $timestamp = (int)substr($val[0], 0, -1);
+                if ((time() - $timestamp) < STALE_RRD) {
+                    // See airpi-data-store-rrd script for fields order.
+                    $values['temperature'] = ($val[1] == 'U') ? NULL : (float)$val[1] / 1000.0;
+                    $values['pressure']    = ($val[2] == 'U') ? NULL : (float)$val[2] / 1000.0;
+                    $values['humidity']    = ($val[3] == 'U') ? NULL : (float)$val[3] / 1000.0;
+                    $values['pm10']        = ($val[9] == 'U') ? NULL : (float)$val[9];
+                }
             }
         }
     }
     return $values;
 }
 
+
 // Calculate atmospheric pressure variation in the last 3 hours (average on 30 minutes).
+// Meaning of pressure variation in 3 hours:
+//  < 1 hPa Weather is stable
+//  < 2 hPa Expected weather variation in 24-48 next hours.
+//  < 3 hPa Expected weather variation in 12-24 next hours.
+//  < 6 hPa Weather variation occurring now.
 function pressure_diff_3h() {
-    // Meaning of pressure value (below 500 m.s.l.m.)
-    //  > 1025 hPa Nice wheater
-    //  < 1000 hPa Bad weather
-    // Meaning of pressure variation in 3 hours:
-    //  < 1 hPa Weather is stable
-    //  < 2 hPa Expected weather variation in 24-48 next hours.
-    //  < 3 hPa Expected weather variation in 12-24 next hours.
-    //  < 6 hPa Weather variation occurring now.
-    $db = new SQLite3('/var/lib/airpi/airpi-data.db');
+    if (PG_CONNECT != '') {
+        return pressure_diff_pgsql();
+    } else {
+        return pressure_diff_sqlite();
+    }
+}
+
+// Use SQLite database.
+function pressure_diff_sqlite() {
+    try {
+        $db = new SQLite3('/var/lib/airpi/airpi-data.db');
+    } catch (Exception $e) {
+        error_log('pressure_diff_sqlite() Exception: ' . $e->getMessage());
+        return NULL;
+    }
     $sql  = "SELECT avg(value) AS p FROM data WHERE %s AND type = 'p'";
     $intvl1 = "datetime(timestamp) BETWEEN datetime('now', '-3 hours', '-30 minutes') AND datetime('now', '-3 hours')";
     $intvl2 = "datetime(timestamp) BETWEEN datetime('now', '-30 minutes') AND datetime('now')";
@@ -83,11 +102,36 @@ function pressure_diff_3h() {
     $p1 = $db->querySingle($sql1);
     $sql2 = sprintf($sql, $intvl2);
     $p2 = $db->querySingle($sql2);
-    if ($p1 == FALSE or $p1 == NULL or $p2 == FALSE or $p2 == NULL) {
-        return NULL;
-    } else {
+    //error_log(sprintf('pressure_diff_sqlite(): $p1 = %s, %s, $p2 = %s, %s', gettype($p1), $p1, gettype($p2), $p2));
+    if ($p1 != FALSE and $p1 != NULL and $p2 != FALSE and $p2 != NULL) {
         return $p2 - $p1;
     }
+    error_log('pressure_diff_sqlite(): Cannot calculate, return NULL');
+    return NULL;
+}
+
+// Use PostgreSQL database.
+function pressure_diff_pgsql() {
+    if (($db = pg_connect(PG_CONNECT)) !== FALSE) {
+        $sql = "SELECT avg(value) AS p FROM data WHERE %s AND type = 'p'";
+        $intvl1 = "time_stamp BETWEEN (now() AT TIME ZONE 'UTC' - INTERVAL '3 hours 30 minutes') AND (now() AT TIME ZONE 'UTC' - INTERVAL '3 hours')";
+        $intvl2 = "time_stamp BETWEEN (now() AT TIME ZONE 'UTC' - INTERVAL '30 minutes') AND (now() AT TIME ZONE 'UTC')";
+        $sql1 = sprintf($sql, $intvl1);
+        $res = pg_query($db, $sql1);
+        if ($res) $p1 = pg_fetch_result($res, 0, 0);
+        else $p1 = FALSE;
+        $sql2 = sprintf($sql, $intvl2);
+        $res = pg_query($db, $sql2);
+        if ($res) $p2 = pg_fetch_result($res, 0, 0);
+        else $p2 = FALSE;
+        //error_log(sprintf('pressure_diff_pgsql(): $p1 = %s, %s, $p2 = %s, %s', gettype($p1), $p1, gettype($p2), $p2));
+        if ($p1 != FALSE and $p1 != NULL and $p2 != FALSE and $p2 != NULL) {
+            // Values are returned as string (sic!).
+            return ((float)$p2 - (float)$p1);
+        }
+    }
+    error_log('pressure_diff_pgsql(): Cannot calculate, return NULL');
+    return NULL;
 }
 
 ?>
