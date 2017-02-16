@@ -12,7 +12,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
               <p>
             </div><!-- /.row -->
             <div class="row">
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-5 col-md-6">
                     <div class="panel panel-yellow">
                         <div class="panel-heading">
                             <div class="row">
@@ -27,7 +27,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-5 col-md-6">
                     <div class="panel panel-green">
                         <div class="panel-heading">
                             <div class="row">
@@ -44,7 +44,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                 </div>
             </div><!-- /.row -->
             <div class="row">
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-5 col-md-6">
                     <div class="panel panel-red">
                         <div class="panel-heading">
                             <div class="row">
@@ -59,7 +59,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-5 col-md-6">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <div class="row">
@@ -76,7 +76,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                 </div>
             </div><!-- /.row -->
             <div class="row">
-                <div class="col-lg-8 col-md-12">
+                <div class="col-lg-10 col-md-12">
                     <div class="alert alert-info no-padding">
                         <div class="text-center no-margin standout-line"><i class="fa fa-clock-o fa-fw"></i> <?= date('H:i d/m/Y') ?></div>
                     </div>
