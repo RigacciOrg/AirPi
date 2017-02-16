@@ -45,7 +45,7 @@ def sqlcreate(filename):
 #---------------------------------------------------------------
 if len(sys.argv) < 3:
     print "Usage:   %s TIMESTAMP type1=value1,type2=value2,..." % (NAME)
-    print "Example: %s 1486678139 t=19.60,hum=66.5,p=990,pm10=54.43,pm2.5=43.78" % (NAME)
+    print "Example: %s 2017-02-16T10:52:41Z t=19.60,hum=66.5,p=990,pm10=54.43,pm2.5=43.78" % (NAME)
     sys.exit(1)
 
 timestamp = sys.argv[1]
