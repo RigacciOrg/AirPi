@@ -1,0 +1,18 @@
+img.airpi-graph {
+    margin-bottom: 1em;
+}
+
+img.loading {
+    -webkit-filter: invert(100%) opacity(20%);
+    filter: invert(100%) opacity(20%);
+}
+
+#calendar { overflow-y: hidden }
+
+.standout-line {
+    font-size: 128%;
+    font-weight: bold;
+}
+
+.no-margin  { margin:  0 }
+.no-padding { padding: 0 }
