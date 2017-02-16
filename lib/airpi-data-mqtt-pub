@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
 #
-# Export AirPi data from SQLite database to a remote MQTT server
+# Export AirPi data from SQLite database to a remote MQTT server.
 
 import calendar, ConfigParser, datetime, logging, os.path, pytz, sqlite3, subprocess, sys
 
@@ -13,20 +13,22 @@ CFG_FILE = '/etc/airpi/airpi.cfg'
 TIMESTAMP_FILE = '/var/lib/airpi/mqtt-timestamp'
 
 DEFAULTS = {
-    'SQLITE_DB':     '/var/lib/airpi/airpi-data.db',
-    'MQTT_LOGIN':    'station-name',
-    'MQTT_PASSWORD': 'station-secret',
-    'MQTT_HOST':     'mqtt.rigacci.org',
-    'XFER_MAX_DAYS': '1'
+    'SQLITE_DB': '/var/lib/airpi/airpi-data.db',
+    'MQTT_HOST': '',
+    'MQTT_LOGIN': '',
+    'MQTT_PASSWORD': '',
+    'MQTT_XFER_MAX_DAYS': '1'
 }
 config = ConfigParser.RawConfigParser(DEFAULTS)
 config.read(CFG_FILE)
-MQTT_LOGIN    = config.get('mqtt', 'MQTT_LOGIN')
-MQTT_PASSWORD = config.get('mqtt', 'MQTT_PASSWORD')
-MQTT_HOST     = config.get('mqtt', 'MQTT_HOST')
-XFER_MAX_DAYS = config.getint('mqtt', 'XFER_MAX_DAYS')
-SQLITE_DB     = config.get('sqlite', 'SQLITE_DB')
+SQLITE_DB          = config.get('sqlite', 'SQLITE_DB')
+MQTT_HOST          = config.get('mqtt', 'MQTT_HOST')
+MQTT_LOGIN         = config.get('mqtt', 'MQTT_LOGIN')
+MQTT_PASSWORD      = config.get('mqtt', 'MQTT_PASSWORD')
+MQTT_XFER_MAX_DAYS = config.getint('mqtt', 'MQTT_XFER_MAX_DAYS')
 
+# Set an empty login to disable MQTT.
+if MQTT_LOGIN == '': sys.exit(0)
 # Set logging for main program and imported modules.
 logging.getLogger().setLevel(logging.INFO)
 
@@ -93,9 +95,9 @@ if timestamp == None:
     logging.error('%s: No data to be transferred' % (NAME,))
     sys.exit(0)
 
-# Limit the transfer to XFER_MAX_DAYS of data.
+# Limit the transfer to MQTT_XFER_MAX_DAYS of data.
 first_dt = datetime.datetime.strptime(timestamp, UTC_FORMAT)
-limit_dt = first_dt + datetime.timedelta(days=XFER_MAX_DAYS)
+limit_dt = first_dt + datetime.timedelta(days=MQTT_XFER_MAX_DAYS)
 logging.info('%s: Transfer data from %s to %s' % (NAME, first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT)))
 
 # Extract data to be transferred.
