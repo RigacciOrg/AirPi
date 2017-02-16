@@ -1,0 +1,12 @@
+# ==== Real Time Clock ====
+# Wait for kernel modules to settle (sleep 1 => FAIL, sleep 2 => OK).
+# Instantiate a DS1307 Realtime Clock at address 0x68 of the I2C bus.
+sleep 3; echo ds1307 0x68 > /sys/class/i2c-adapter/i2c-1/new_device
+# Wait for the device to bring to life, then set system clock from RTC.
+sleep 1; hwclock --hctosys
+
+# ==== BME280 ====
+# Values read from BME280 sensor are stored into a cache file.
+# Because sensor data are exposed via SNMP, the file should be
+# writable by the SNMP daemon.
+install -m 0664 -o root -g snmp /dev/null /var/run/bme280.status
