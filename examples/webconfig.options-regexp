@@ -1,0 +1,21 @@
+# Regular expressions for options validation.
+
+NET_USE_DHCP=(No)|(Yes)
+NET_IPADDRESS=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+NET_NETMASK=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+NET_GATEWAY=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+NET_DNS_SERVER=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+NET_ALT_IPADDRESS=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+NET_ALT_NETMASK=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+
+WIFI_ESSID1=.*
+WIFI_PASSWORD1=.*
+WIFI_ESSID2=.*
+WIFI_PASSWORD2=.*
+WIFI_ESSID3=.*
+WIFI_PASSWORD3=.*
+
+STA_NAME=.*
+STA_LAT=[+-]?\d+(\.\d*)?
+STA_LON=[+-]?\d+(\.\d*)?
+STA_ELE=[+-]?\d+(\.\d*)?

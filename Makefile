@@ -8,6 +8,11 @@ CRON_PMS5003 = /etc/cron.d/pms5003
 SUDOERS = /etc/sudoers.d/airpi
 BME280_STATUS = /var/run/bme280.status
 
+CFG_WEBCFG = /etc/host-config/webconfig.cfg
+CFG_OPTIONS = /etc/host-config/options
+CFG_PENDING = /etc/host-config/options-pending
+CFG_REGEXP = /etc/host-config/options-regexp
+
 LIB_FILES := $(shell cd lib; echo airpi-* bme280* pms5003* rrd-graph-*)
 LIB_PYLIB := $(shell cd lib; echo Adafruit_BME280*)
 
@@ -30,6 +35,13 @@ install-config:
 	test -e $(CRON_PMS5003)  || install -m 0644 -o root -g root examples/cron.pms5003 $(CRON_PMS5003)
 	test -e $(SUDOERS)       || install -m 0644 -o root -g root examples/sudoers.airpi $(SUDOERS)
 	test -e $(BME280_STATUS) || install -m 0664 -o root -g snmp /dev/null $(BME280_STATUS)
+
+.PHONY: install-webconfig
+install-webconfig:
+	test -e $(CFG_WEBCFG)    || install -m 0640 -o www-data -g root /dev/null $(CFG_WEBCFG)
+	test -e $(CFG_PENDING)   || install -m 0640 -o www-data -g root /dev/null $(CFG_PENDING)
+	test -e $(CFG_OPTIONS)   || install -m 0640 -o www-data -g root examples/webconfig.options $(CFG_OPTIONS)
+	install -m 0640 -o www-data -g root examples/webconfig.options-regexp $(CFG_REGEXP)
 
 .PHONY: uninstall
 uninstall:
