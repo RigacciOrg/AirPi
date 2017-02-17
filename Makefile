@@ -2,6 +2,8 @@ TARGET = airpi
 PREFIX = $(DESTDIR)/usr/local
 LIBDIR = $(PREFIX)/lib/$(TARGET)
 
+DIRECTORIES = /etc/airpi /etc/host-config
+
 AIRPI_CFG = /etc/airpi/airpi.cfg
 CRON_AIRPI = /etc/cron.d/airpi
 CRON_PMS5003 = /etc/cron.d/pms5003
@@ -28,6 +30,10 @@ install-lib:
 	install -m 644 -o root -g root -D -t $(LIBDIR) $(addprefix lib/, $(LIB_PYLIB))
 	python -m compileall $(LIBDIR)
 
+.PHONY: install-directories
+install-directories:
+	install -m 0755 -o root -g root -d $(DIRECTORIES)
+
 .PHONY: install-config
 install-config:
 	test -e $(AIRPI_CFG)     || install -m 0640 -o root -g root examples/airpi.cfg $(AIRPI_CFG)
@@ -41,7 +47,7 @@ install-webconfig:
 	test -e $(CFG_WEBCFG)    || install -m 0640 -o www-data -g root /dev/null $(CFG_WEBCFG)
 	test -e $(CFG_PENDING)   || install -m 0640 -o www-data -g root /dev/null $(CFG_PENDING)
 	test -e $(CFG_OPTIONS)   || install -m 0640 -o www-data -g root examples/webconfig.options $(CFG_OPTIONS)
-	install -m 0640 -o www-data -g root examples/webconfig.options-regexp $(CFG_REGEXP)
+	install -m 0640 -o root -g root examples/webconfig.options-regexp $(CFG_REGEXP)
 
 .PHONY: uninstall
 uninstall:
