@@ -54,6 +54,7 @@ if (PG_CONNECT != '') {
         $db = new SQLite3('/var/lib/airpi/airpi-data.db');
     } catch (Exception $e) {
         error_log('new SQLite3() Exception: ' . $e->getMessage());
+        $db = FALSE;
     }
     if ($db) {
         $sql  = "SELECT strftime('%%Y-%%m-%%d', timestamp, 'localtime') AS day, avg(value) AS pm10";
