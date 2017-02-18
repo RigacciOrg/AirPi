@@ -4,7 +4,7 @@ LIBDIR = $(PREFIX)/lib/$(TARGET)
 WWW_ROOT = /var/www/html
 WWW_CONFIG = $(WWW_ROOT)/config.php
 
-DIRECTORIES = /etc/airpi /etc/host-config /var/www/html
+DIRECTORIES = /etc/airpi /etc/host-config /var/lib/airpi /var/www/html
 
 AIRPI_CFG = /etc/airpi/airpi.cfg
 CRON_AIRPI = /etc/cron.d/airpi
