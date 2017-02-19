@@ -98,10 +98,13 @@ data = []
 data.append(timestamp)
 try:
     for i in range(0, len(names)):
-        if names[i] in MULTPLY_BY_1000:
-            data.append(str(int(float(values[i]) * 1000)))
+        if values[i] == 'U':
+            data.append(values[i])
         else:
-            data.append(str(int(float(values[i]))))
+            if names[i] in MULTPLY_BY_1000:
+                data.append(str(int(float(values[i]) * 1000)))
+            else:
+                data.append(str(int(float(values[i]))))
 except Exception, e:
     logging.error("%s: Error parsing input data: %s" % (NAME, str(e),))
 
