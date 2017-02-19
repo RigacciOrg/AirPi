@@ -1,8 +1,11 @@
 <?php
 
 // Example of GET requests:
-//   * download_csv.php?period=curr_day
-//   * download_csv.php?period=curr_day&data[]=pm10&data[]=hum
+//   * download_csv.php?id=0&period=curr_day
+//   * download_csv.php?id=0&period=curr_day&data[]=pm10&data[]=hum
+
+require_once('functions.php');
+// $station_id is now defined.
 
 $periods = array ('day', 'week', 'month', 'year');
 $valid_fields = array('t', 'p', 'hum', 'pm10');
@@ -63,17 +66,20 @@ if (array_key_exists('period', $_REQUEST)) {
                 if (in_array($f, $valid_fields)) array_push($req_data, $f);
             }
         }
-        $cmd  = '/usr/local/bin/airpi-data-export';
+        $cmd  = '/usr/local/lib/airpi/airpi-data-export';
+        $cmd .= ' ' . escapeshellarg($station_id);
         $cmd .= ' ' . escapeshellarg($begin_date);
         $cmd .= ' ' . escapeshellarg($end_date);
         if (count($req_data) > 0) {
             $cmd .= ' ' . escapeshellarg(implode(',', $req_data));
         }
-        //print $cmd . "<br>\n"; exit;
-        header("Content-Type: text/csv; charset=utf-8");
+        //print $cmd . "<br>\n";
+        //error_log(basename(__FILE__) . ': Executing: ' . $cmd);
+        header('Content-Type: text/csv; charset=utf-8');
         $filename = 'airpi_' . $begin_date . '-' . $end_date . '.csv';
         header("Content-Disposition: attachment; filename=\"$filename\"");
         passthru($cmd, $ret);
+        //error_log(basename(__FILE__) . ': Command returned ' . $ret);
         exit();
     }
 }

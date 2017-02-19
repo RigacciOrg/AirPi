@@ -1,62 +1,113 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+#
+# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
+# Export data from an AirPi station: from SQLite or
+# PostgreSQL database into CSV format.
+# Timestamps in database are in UTC time without timezone,
+# dates passed on command line are intended as localtime.
+#
+# SQLite database does not contain station_id field,
+# PostgreSQL does.
 
-#---------------------------------------------------------------
-# Copyright (C) 2016 Niccolo Rigacci
-#---------------------------------------------------------------
+import ConfigParser, datetime, os.path, sys
 
-import datetime, os.path, sqlite3, sys
-
-SQLITE_DB = '/var/lib/airpi/airpi-data.db'
+CFG_FILE = '/etc/airpi/airpi.cfg'
 BME280_DATA = ['t', 'p', 'hum']
 PMS5003_DATA = ['pm1.0', 'pm2.5', 'pm10', 'cf1pm1.0', 'cf1pm2.5', 'cf1pm10', 'gt0.3um', 'gt0.5um', 'gt1.0um', 'gt2.5um', 'gt5um', 'gt10um']
 VALID_DATA = BME280_DATA + PMS5003_DATA
 NAME = os.path.basename(sys.argv[0])
 
 #---------------------------------------------------------------
+# Read configuration file.
+#---------------------------------------------------------------
+try:
+    DEFAULTS = {
+        'SQLITE_DB': '/var/lib/airpi/airpi-data.db',
+        'PG_CONNECT': ''
+    }
+    config = ConfigParser.RawConfigParser(DEFAULTS)
+    config.read(CFG_FILE)
+    SQLITE_DB  = config.get('sqlite', 'SQLITE_DB')
+    PG_CONNECT = config.get('pgsql', 'PG_CONNECT')
+except Exception, e:
+    print "ERROR: %s: Reading configuration file: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+#---------------------------------------------------------------
 # Main.
 #---------------------------------------------------------------
-if len(sys.argv) < 3:
-    print "Usage: %s YYYY-MM-DD YYYY-MM-DD [field1,field2,...]" % (NAME)
+if len(sys.argv) < 4:
+    print "Usage: %s STATION_ID YYYY-MM-DD YYYY-MM-DD [field1,field2,...]" % (NAME)
     print "Extract data from AirPi database from date1 (included) to date2 (excluded)."
     sys.exit(1)
 
+
 try:
-    date_begin = datetime.datetime.strptime(sys.argv[1], "%Y-%m-%d")
-    date_end   = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
-    if len(sys.argv) < 4:
+    station_id = int(sys.argv[1])
+    date_begin = datetime.datetime.strptime(sys.argv[2], "%Y-%m-%d")
+    date_end   = datetime.datetime.strptime(sys.argv[3], "%Y-%m-%d")
+    if len(sys.argv) < 5:
         fields = None
     else:
-        fields = sys.argv[3].split(',')
+        fields = sys.argv[4].split(',')
 except Exception, e:
     print "ERROR: %s: Syntax error in command line: %s" % (NAME, str(e),)
     sys.exit(1)
 
+#---------------------------------------------------------------
+# Check requested fields.
+#---------------------------------------------------------------
 if fields:
     for f in list(fields):
         if not f in VALID_DATA:
             print 'WARNING: %s: Field "%s" does not exists' % (NAME, f)
             fields.remove(f)
 
-sql = "SELECT timestamp, type, value FROM data WHERE timestamp >= ? AND timestamp < ?"
-if fields: sql += " AND type IN ('%s')" % ("', '".join(fields))
-sql += " ORDER BY timestamp, type"
-#print sql
+#---------------------------------------------------------------
+# Exec the SQL query ad output data.
+#---------------------------------------------------------------
+if PG_CONNECT != '':
+    import psycopg2
+    # To change PostgreSQL idea of localtime use something like:
+    # SET TIME ZONE 'America/Los_Angeles';
+    sql  = "SELECT time_stamp, type, value FROM data"
+    sql += " WHERE (time_stamp AT TIME ZONE 'UTC') >= %s::TIMESTAMP"
+    sql += " AND (time_stamp AT TIME ZONE 'UTC') < %s::TIMESTAMP AND station_id = %s"
+    if fields: sql += " AND type IN ('%s')" % ("', '".join(fields))
+    sql += " ORDER BY time_stamp, type"
+    try:
+        conn = psycopg2.connect(PG_CONNECT)
+        curs = conn.cursor()
+        curs.execute(sql, (date_begin, date_end, station_id))
+    except Exception, e:
+        print "ERROR: %s: Cannot connect database: %s" % (NAME, str(e),)
+        sys.exit(1)
+    for row in curs:
+        print "%s,%s,%s" % (row[0].strftime("%Y-%m-%d %H:%M:%S"), row[1], row[2])
+    curs.close()
+    conn.close()
+else:
+    import sqlite3
+    sql  = "SELECT timestamp, type, value FROM data"
+    sql += " WHERE datetime(timestamp, 'localtime') >= ?"
+    sql += " AND datetime(timestamp, 'localtime') < ?"
+    if fields: sql += " AND type IN ('%s')" % ("', '".join(fields))
+    sql += " ORDER BY timestamp, type"
+    try:
+        conn = sqlite3.connect(SQLITE_DB)
+        curs = conn.cursor()
+    except Exception, e:
+        print "ERROR: %s: Cannot open database: %s" % (NAME, str(e),)
+        sys.exit(1)
+    try:
+        for row in curs.execute(sql, (date_begin, date_end)):
+            timestamp = datetime.datetime.strptime(row[0], '%Y-%m-%dT%H:%M:%SZ')
+            print "%s,%s,%s" % (timestamp.strftime("%Y-%m-%d %H:%M:%S"), row[1], row[2])
+    except Exception, e:
+        print "ERROR: %s: Error reading the database: %s" % (NAME, str(e),)
+        sys.exit(1)
+    conn.close()
 
-try:
-    con = sqlite3.connect(SQLITE_DB)
-    cur = con.cursor()
-except Exception, e:
-    print "ERROR: %s: Cannot open database: %s" % (NAME, str(e),)
-    sys.exit(1)
-
-try:
-    for row in cur.execute(sql, (date_begin, date_end)):
-        timestamp = datetime.datetime.strptime(row[0], '%Y-%m-%dT%H:%M:%SZ')
-        print "%s,%s,%s" % (timestamp.strftime("%Y-%m-%d %H:%M:%S"), row[1], row[2])
-except Exception, e:
-    print "ERROR: %s: Error reading the database: %s" % (NAME, str(e),)
-    sys.exit(1)
-
-con.close()
 sys.exit(0)
