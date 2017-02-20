@@ -30,12 +30,12 @@
 # http://www.rigacci.org/wiki/lib/exe/fetch.php/doc/appunti/hardware/raspberrypi/plantower-pms5003-manual_v2-3.pdf
 #
 # Author        Niccolo Rigacci <niccolo@rigacci.org>
-# Version       0.1.1  2017-02-20
+# Version       0.1.2  2017-02-20
 
 # Required Debian packages:
 # apt-get install python-serial
 
-import datetime, os, serial, sys, time
+import datetime, os, os.path, serial, sys, time
 import logging, logging.handlers
 
 # Make several reads, then calculate the average.
@@ -50,8 +50,10 @@ MAX_FRAME_ERRORS = 10
 
 # Sensor settling after wakeup requires at least 30 seconds (sensor sepcifications).
 WAIT_AFTER_WAKEUP = 40
-# Total Response Time is 10 seconds (sensor sepcifications).
+# Total Response Time is 10 seconds (sensor specifications).
 MAX_TOTAL_RESPONSE_TIME = 12
+# GPIO wired to RESET line of PMS5003, must be already exported and set to output.
+PMS5003_RESET_GPIO = '/sys/class/gpio/gpio17'
 
 # Normal data frame length.
 DATA_FRAME_LENGTH = 28
@@ -117,14 +119,31 @@ def average2str(a):
 #---------------------------------------------------------------
 # Send a RESET signal to sensor.
 #---------------------------------------------------------------
-def sensor_reset(_port):
+def sensor_reset():
     logging.info("Sending RESET signal to sensor")
-    _port.flushOutput()
-    _port.flushInput()
-    # TODO: Use GPIO to send RESET signal.
-    send_buffer(CMD_WAKEUP, _port)
-    time.sleep(WAIT_AFTER_WAKEUP)
-    _port.flushInput()
+    try:
+        gpio_direction = None
+        if not os.path.isdir(PMS5003_RESET_GPIO):
+            logging.error(u'GPIO for sensor RESET is not exported: %s' % (PMS5003_RESET_GPIO,))
+            return
+        else:
+            with open(os.path.join(PMS5003_RESET_GPIO, 'direction'), 'r') as f:
+                gpio_direction = f.read().strip()
+        if gpio_direction != 'out':
+            logging.error(u'GPIO for sensor RESET is not set to output')
+            return
+        else:
+            logging.info(u'Setting GPIO line to LOW for a short time')
+            with open(os.path.join(PMS5003_RESET_GPIO, 'value'), 'w') as f:
+                f.write("0\n")
+            time.sleep(0.5)
+            with open(os.path.join(PMS5003_RESET_GPIO, 'value'), 'w') as f:
+                f.write("1\n")
+            time.sleep(1.0)
+    except Exception, e:
+        logging.error(u'PMS5003 sensor RESET via GPIO line: Exception %s' % (str(e),))
+    except KeyboardInterrupt:
+        sys.exit(1)
     return
 
 #---------------------------------------------------------------
@@ -143,6 +162,11 @@ def sensor_wakeup(_port):
     response = send_buffer(CMD_WAKEUP, _port)
     if not response:
         logging.error('No response to wakeup command')
+        sensor_reset()
+        logging.info('Sending wakeup command again')
+        response = send_buffer(CMD_WAKEUP, _port)
+        if not response:
+            logging.error('No response to repeated wakeup command')
     logging.info("Waiting %d seconds for sensor to settle" % (WAIT_AFTER_WAKEUP,))
     time.sleep(WAIT_AFTER_WAKEUP)
     _port.flushInput()
@@ -301,7 +325,7 @@ while True:
             error_total += 1
             if error_count >= RESET_ON_FRAME_ERRORS:
                 logging.warning("Repeated read errors, attempting sensor reset")
-                sensor_reset(port)
+                sensor_reset()
                 error_count = 0
                 continue
             if error_total >= MAX_FRAME_ERRORS:
