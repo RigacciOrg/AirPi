@@ -19,3 +19,10 @@ STA_NAME=.*
 STA_LAT=[+-]?\d+(\.\d*)?
 STA_LON=[+-]?\d+(\.\d*)?
 STA_ELE=[+-]?\d+(\.\d*)?
+
+HTTP_REQUEST_URL=.*
+HTTP_LOGIN=.*
+HTTP_PASSWORD=.*
+MQTT_HOST=.*
+MQTT_LOGIN=.*
+MQTT_PASSWORD=.*
