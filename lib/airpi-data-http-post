@@ -33,8 +33,8 @@ HTTP_REQUEST_URL   = config.get('http_forward', 'HTTP_REQUEST_URL')
 HTTP_XFER_MAX_DAYS = config.getint('http_forward', 'HTTP_XFER_MAX_DAYS')
 SQLITE_DB   = config.get('sqlite', 'SQLITE_DB')
 
-# Set an empty login to disable HTTP.
-if HTTP_LOGIN == '': sys.exit(0)
+# Set an empty URL to disable HTTP data forward.
+if HTTP_REQUEST_URL == '': sys.exit(0)
 # Disable warning about missing HTTPS valid certificate.
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 # Set logging for main program and imported modules.

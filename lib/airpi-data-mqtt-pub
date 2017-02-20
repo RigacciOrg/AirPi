@@ -27,8 +27,8 @@ MQTT_LOGIN         = config.get('mqtt', 'MQTT_LOGIN')
 MQTT_PASSWORD      = config.get('mqtt', 'MQTT_PASSWORD')
 MQTT_XFER_MAX_DAYS = config.getint('mqtt', 'MQTT_XFER_MAX_DAYS')
 
-# Set an empty login to disable MQTT.
-if MQTT_LOGIN == '': sys.exit(0)
+# Set an empty MQTT_HOST to disable MQTT data publishing.
+if MQTT_HOST == '': sys.exit(0)
 # Set logging for main program and imported modules.
 logging.getLogger().setLevel(logging.INFO)
 
