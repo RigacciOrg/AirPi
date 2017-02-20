@@ -30,7 +30,7 @@
 # http://www.rigacci.org/wiki/lib/exe/fetch.php/doc/appunti/hardware/raspberrypi/plantower-pms5003-manual_v2-3.pdf
 #
 # Author        Niccolo Rigacci <niccolo@rigacci.org>
-# Version       0.1.0  2016-11-08
+# Version       0.1.1  2017-02-20
 
 # Required Debian packages:
 # apt-get install python-serial
@@ -70,7 +70,7 @@ STATUS_FILE = '/run/pms5003.status'
 # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_LEVEL = 'DEBUG'
 # Log to stdout or to file/syslog.
-LOG_TO_STDOUT = False
+LOG_TO_STDOUT = sys.stdin.isatty()
 # False for syslog logging, filename for file logging.
 LOG_TO_FILE = False
 LOG_FMT_SYSLOG = '%(module)s: %(levelname)s %(message)s'
@@ -140,13 +140,16 @@ def sensor_sleep(_port):
 #---------------------------------------------------------------
 def sensor_wakeup(_port):
     logging.info("Sending wakeup command")
-    send_buffer(CMD_WAKEUP, _port)
+    response = send_buffer(CMD_WAKEUP, _port)
+    if not response:
+        logging.error('No response to wakeup command')
     logging.info("Waiting %d seconds for sensor to settle" % (WAIT_AFTER_WAKEUP,))
     time.sleep(WAIT_AFTER_WAKEUP)
     _port.flushInput()
 
 #---------------------------------------------------------------
 # Send a command buffer to the serial port, with checksum.
+# Return the response frame, if any.
 #---------------------------------------------------------------
 def send_buffer(b, _port):
     checksum = 0
@@ -158,13 +161,15 @@ def send_buffer(b, _port):
     written = _port.write(b)
     if written != len(b):
         logging.warning("Short write, sent %d bytes instead of %d" % (written, len(b)))
+        response = None
     else:
         # Get a response frame (if any). Examples:
         # Wakeup CMD: 0x42 0x4d 0xe4 0x00 0x01
         #   Response: 0x42 0x4d 0x00 0x1c ...(full data frame)
         # Sleep CMD:  0x42 0x4d 0xe4 0x00 0x00
         #   Response: 0x42 0x4d 0x00 0x04 0xe4 0x00
-        read_pm_frame(_port)
+        response = read_pm_frame(_port)
+    return response
 
 #---------------------------------------------------------------
 # Save averaged data somewhere.
@@ -181,12 +186,17 @@ def save_data(text):
 #---------------------------------------------------------------
 # Read a data frame from serial port, the first 4 bytes are:
 # 0x42, 0x4d, frame lenght (16 bit integer).
+# Return None on errors.
 #---------------------------------------------------------------
 def read_pm_frame(_port):
     frame = b''
     start = datetime.datetime.utcnow()
     while True:
         b0 = _port.read()
+        if b0 != '':
+            logging.debug('Got char 0x%x from serial read()' % (ord(b0),))
+        else:
+            logging.debug('Timeout on serial read()')
         if b0 == b'\x42':
             b1 = _port.read()
             if b1 == b'\x4d':
@@ -208,12 +218,13 @@ def read_pm_frame(_port):
                     if checksum != expected:
                         logging.error("Checksum mismatch: %d, expected %d" % (checksum, expected))
                         return None
+                    logging.debug("Received data frame = %s" % (buff2hex(frame),))
                     return frame
                 elif frame_len == CMD_FRAME_LENGTH:
                     # Command response frame.
                     frame += b0 + b1 + b2 + b3
                     frame += _port.read(frame_len)
-                    logging.debug("Received frame = %s" % (buff2hex(frame),))
+                    logging.debug("Received command response frame = %s" % (buff2hex(frame),))
                     return frame
                 else:
                     # Unexpected frame.
@@ -304,7 +315,7 @@ while True:
                     break
 
         # Skip non-output data-frames.
-        if (len(rcv) - 4) != DATA_FRAME_LENGTH:
+        if (rcv == None) or ((len(rcv) - 4) != DATA_FRAME_LENGTH):
             continue
 
         # Got a valid data-frame.
