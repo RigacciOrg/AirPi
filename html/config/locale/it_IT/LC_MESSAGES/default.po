@@ -186,3 +186,12 @@ msgstr "Longitudine"
 
 msgid "Elevation"
 msgstr "Altezza s.l.m."
+
+msgid "Data Forward"
+msgstr "Inoltro dati"
+
+msgid "HTTP Protocol"
+msgstr "Protocollo HTTP"
+
+msgid "MQTT Protocol"
+msgstr "Protocollo MQTT"

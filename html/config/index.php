@@ -15,6 +15,7 @@ include_once('includes/authenticate.php');
 include_once('includes/system.php');
 include_once('includes/station.php');
 include_once('includes/network.php');
+include_once('includes/data_forward.php');
 include_once('includes/auth_conf.php');
 
 // Look for translation in ./locale/$config['lang']/LC_MESSAGES/default.mo
@@ -78,18 +79,11 @@ $csrf_token = $_SESSION['csrf_token'];
         <div class="navbar-default sidebar" role="navigation">
           <div class="sidebar-nav navbar-collapse">
             <ul class="nav" id="side-menu">
-              <li>
-                 <a href="index.php?page=system"><i class="fa fa-cube fa-fw"></i> <?= my_html(_('System')); ?></a>
-              </li>
-              <li>
-                <a href="index.php?page=station"><i class="fa fa-tags fa-fw"></i> <?= my_html(_('Weather Station')); ?></a>
-              </li>
-              <li>
-                <a href="index.php?page=network"><i class="fa fa-signal fa-fw"></i> <?= my_html(_('Internet')); ?></a>
-              </li>
-              <li>
-                <a href="index.php?page=auth_conf"><i class="fa fa-lock fa-fw"></i> <?= my_html(_('Admin Password')); ?></a>
-              </li>
+              <li><a href="index.php?page=system"><i class="fa fa-cube fa-fw"></i> <?= my_html(_('System')); ?></a></li>
+              <li><a href="index.php?page=network"><i class="fa fa-signal fa-fw"></i> <?= my_html(_('Internet')); ?></a></li>
+              <li><a href="index.php?page=station"><i class="fa fa-tags fa-fw"></i> <?= my_html(_('Weather Station')); ?></a></li>
+              <li><a href="index.php?page=data_forward"><i class="fa fa-database fa-fw"></i> <?= my_html(_('Data Forward')); ?></a></li>
+              <li><a href="index.php?page=auth_conf"><i class="fa fa-lock fa-fw"></i> <?= my_html(_('Admin Password')); ?></a></li>
             </ul>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.navbar-default -->
@@ -116,6 +110,9 @@ switch($page) {
     case 'network':
         DisplayNetwork();
         break;
+    case 'data_forward':
+        DisplayDataForward();
+        break;
     case 'auth_conf':
         DisplayAuthConfig($config['admin_user'], $config['admin_pass']);
         break;
@@ -141,6 +138,7 @@ switch($page) {
 // Add JavaScript for this specific page.
 switch($page) {
     case 'network':
+    case 'data_forward':
     case 'system':
         echo '    <!-- JavaScript for this page -->' . "\n";
         echo '    <script type="text/javascript" src="includes/' . $page . '.js"></script>' . "\n";
