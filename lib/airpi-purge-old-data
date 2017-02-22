@@ -8,7 +8,7 @@ rrd_archive = '/var/lib/airpi/airpi-data-0.rrd'
 
 def usage():
     print u'Usage: %s "YYYY-mm-dd HH:MM"' % (os.path.basename(sys.argv[0]))
-    print u"Delete old AirPi data from RRD and SQLite archives."
+    print u"Delete data from RRD and SQLite archives older than specified localtime."
     sys.exit(1)
 
 if len(sys.argv) < 2: usage()
