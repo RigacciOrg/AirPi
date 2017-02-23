@@ -1,20 +1,27 @@
 <?php
 
-// Default (hard-coded) configuration.
+function config_read() {
+    global $config;
+    $config_file = join_paths(THIS_CONFIG, 'webconfig.php');
+    if (file_exists($config_file)) {
+        include $config_file;
+    }
+}
+
+function config_write() {
+    global $config;
+    $config_file = join_paths(THIS_CONFIG, 'webconfig.php');
+    $config_export = var_export($config, true);
+    return file_put_contents($config_file, "<?php\n\$config = ${config_export};\n");
+}
+
+// Default (hard-coded) configuration. Do not change this file, use webconfig.php instead.
+// Default password is admin/secret.
 $config = array(
     'admin_user' => 'admin',
-    'admin_pass' => '$2y$10$YKIyWAmnQLtiJAy6QgHQ.eCpY4m.HCEbiHaTgN6.acNC6bDElzt.i',
+    'admin_pass' => '$2y$10$LdZb2R1p6D1uHBdwl9F6jemf0GoFFA0DHjxkwlX7c254YK6VFuqeO',
     'lang'       => 'it_IT'
 );
-
-// Customized configuration is read from file.
-if ($auth_details = @fopen(join_paths(THIS_CONFIG, 'webconfig.cfg'), 'r')) {
-    $line = trim(fgets($auth_details));
-    if ($line != '') {
-        $config['admin_user'] = $line;
-        $config['admin_pass'] = trim(fgets($auth_details));
-    }
-    fclose($auth_details);
-}
+config_read();
 
 ?>

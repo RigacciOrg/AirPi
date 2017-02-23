@@ -2,7 +2,8 @@
 
 include_once( 'includes/status_messages.php' );
 
-function DisplayAuthConfig($username, $password){
+function DisplayAuthConfig($username, $password) {
+    global $config;
     $status = new StatusMessages();
     if (isset($_POST['UpdateAdminPassword'])) {
         if (! CSRFValidate()) {
@@ -15,10 +16,9 @@ function DisplayAuthConfig($username, $password){
                 } else if ($new_username == '') {
                     $status->addMessage(_('Username must not be empty'), 'danger');
                 } else {
-                    if ($auth_file = fopen(join_paths(THIS_CONFIG, 'webconfig.cfg'), 'w')) {
-                        fwrite($auth_file, $new_username . PHP_EOL);
-                        fwrite($auth_file, password_hash($_POST['newpass'], PASSWORD_BCRYPT) . PHP_EOL);
-                        fclose($auth_file);
+                    $config['admin_user'] = $new_username;
+                    $config['admin_pass'] = password_hash($_POST['newpass'], PASSWORD_BCRYPT);
+                    if (config_write()) {
                         $username = $new_username;
                         $status->addMessage(_('Admin password updated'));
                     } else {
@@ -70,7 +70,7 @@ function DisplayAuthConfig($username, $password){
       </div><!-- /.panel-default -->
     </div><!-- /.col-lg-12 -->
   </div><!-- /.row -->
-<?php 
+<?php
 }
 
 ?>

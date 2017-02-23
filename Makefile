@@ -13,7 +13,7 @@ CRON_PMS5003 = /etc/cron.d/pms5003
 SUDOERS = /etc/sudoers.d/airpi
 BME280_STATUS = /var/run/bme280.status
 
-CFG_WEBCFG = /etc/host-config/webconfig.cfg
+CFG_WEBCFG = /etc/host-config/webconfig.php
 CFG_OPTIONS = /etc/host-config/options
 CFG_PENDING = /etc/host-config/options-pending
 CFG_REGEXP = /etc/host-config/options-regexp
