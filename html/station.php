@@ -1,8 +1,8 @@
-<!DOCTYPE html>
 <?php
 require_once('functions.php');
-$page = isset($_GET['page']) ? $_GET['page'] : NULL;
+// $station_id is now defined.
 $refresh = FALSE;
+$page = isset($_GET['page']) ? $_GET['page'] : NULL;
 switch ($page) {
     case 'graphs':
         $refresh = 600;
@@ -15,6 +15,7 @@ switch ($page) {
         $page = 'dashboard';
 }
 ?>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="utf-8">
@@ -53,16 +54,16 @@ if ($page == 'calendar') echo '    <link href="inc/cal/bootstrap-year-calendar.m
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html"><i class="fa fa-envira fa-fw"></i> <?= my_html(STATION_NAME) ?></a>
+                <a class="navbar-brand" href="./"><i class="fa fa-envira fa-fw"></i> <?= my_html(STATION_NAME) ?></a>
             </div><!-- /.navbar-header -->
 
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
-                        <li><a href="?page=dashboard"><i class="fa fa-dashboard fa-fw"></i> Display</a></li>
-                        <li><a href="?page=graphs"><i class="fa fa-area-chart fa-fw"></i> Grafici</a></li>
-                        <li><a href="?page=calendar"><i class="fa fa-calendar fa-fw"></i> Calendario</a></li>
-                        <li><a href="?page=download"><i class="fa fa-download fa-fw"></i> Download dati</a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;page=dashboard"><i class="fa fa-dashboard fa-fw"></i> Display</a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;page=graphs"><i class="fa fa-area-chart fa-fw"></i> Grafici</a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;page=calendar"><i class="fa fa-calendar fa-fw"></i> Calendario</a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;page=download"><i class="fa fa-download fa-fw"></i> Download dati</a></li>
                     </ul>
                 </div><!-- /.sidebar-collapse -->
             </div><!-- /.navbar-static-side -->

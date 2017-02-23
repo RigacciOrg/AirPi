@@ -1,6 +1,7 @@
 #!/bin/sh
 
-RRD_ARCHVIE='/var/lib/airpi/airpi-data-0.rrd'
+STATION_ID=${2:-0} # Second parameter, default to "0".
+RRD_ARCHVIE="/var/lib/airpi/airpi-data-${STATION_ID}.rrd"
 TIMESTAMP="$(/bin/date '+%Y-%m-%d %H:%M')"
 
 case "$1" in

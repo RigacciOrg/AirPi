@@ -1,7 +1,7 @@
 <?php
-
 require_once('functions.php');
-$sensor = get_latest_data();
+// $station_id is now defined.
+$sensor = get_latest_data($station_id);
 
 $pm10_icon = pm10_icon($sensor['pm10']);
 $pressure_icon = pressure_icon($sensor['pressure']);

@@ -1,3 +1,7 @@
+<?php
+require_once('functions.php');
+// $station_id is now defined.
+?>
             <div class="row">
                 <div class="col-lg-12">
                     <h3 class="page-header">Download dati</h3>
@@ -35,6 +39,7 @@
                                     </div></div><!-- /.row -->
 
                                     <div class="row">
+                                        <input type="hidden" name="id" value="<?= $station_id ?>">
                                         <input type="hidden" name="period" value="">
                                         <div class="col-lg-6">
                                             <div class="panel panel-primary">

@@ -69,7 +69,7 @@ function DisplayDataForward() {
       <div class="panel panel-primary">
         <div class="panel-heading"><i class="fa fa-database fa-fw"></i> <?= my_html(_('Data Forward')); ?></div>
         <div class="panel-body">
-          <form role="form" action="?page=network" method="POST">
+          <form role="form" action="?page=data_forward" method="POST">
             <?= CSRFToken() ?>
             <div class="row">
 

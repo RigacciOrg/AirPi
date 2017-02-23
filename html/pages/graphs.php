@@ -1,6 +1,6 @@
 <?php
-
 require_once('functions.php');
+// $station_id is now defined.
 $period = isset($_REQUEST['view']) ? $_REQUEST['view'] : 'weekly';
 switch ($period) {
     case 'daily':
@@ -16,6 +16,8 @@ switch ($period) {
         $period = 'weekly';
         $period_label = 'Settimanale';
 }
+$graph_src = sprintf('rrd-graph.php?id=%s&amp;period=%s&amp;graph=', $station_id, $period);
+$view_href = sprintf('?id=%s&amp;page=graphs&amp;view=', $station_id);
 
 ?>
             <div class="row">
@@ -36,21 +38,21 @@ switch ($period) {
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu" id="period-select">
-                                        <li><a data-alias="daily"   href="?page=graphs&view=daily">Giornaliera</a></li>
-                                        <li><a data-alias="weekly"  href="?page=graphs&view=weekly">Settimanale</a></li>
-                                        <li><a data-alias="monthly" href="?page=graphs&view=monthly">Mensile</a></li>
-                                        <li><a data-alias="yearly"  href="?page=graphs&view=yearly">Annuale</a></li>
+                                        <li><a data-alias="daily"   href="<?= $view_href ?>daily">Giornaliera</a></li>
+                                        <li><a data-alias="weekly"  href="<?= $view_href ?>weekly">Settimanale</a></li>
+                                        <li><a data-alias="monthly" href="<?= $view_href ?>monthly">Mensile</a></li>
+                                        <li><a data-alias="yearly"  href="<?= $view_href ?>yearly">Annuale</a></li>
                                     </ul>
                                 </div>
                             </div>
                         </div><!-- /.panel-heading -->
                         <div class="panel-body">
                             <div id="airpi-graph-panel">
-                                <img id="img-pm-concentration" alt="" class="img-responsive airpi-graph" src="rrd-graph.php?graph=pm-concentration&period=<?= $period ?>">
-                                <img id="img-pressure"         alt="" class="img-responsive airpi-graph" src="rrd-graph.php?graph=pressure&period=<?= $period ?>">
-                                <img id="img-temperature"      alt="" class="img-responsive airpi-graph" src="rrd-graph.php?graph=temperature&period=<?= $period ?>">
-                                <img id="img-humidity"         alt="" class="img-responsive airpi-graph" src="rrd-graph.php?graph=humidity&period=<?= $period ?>">
-                           <!-- <img id="img-pm-count"         alt="" class="img-responsive airpi-graph" src="rrd-graph.php?graph=pm-count&period=<?= $period ?>"> -->
+                                <img id="img-pm-concentration" alt="" class="img-responsive airpi-graph" src="<?= $graph_src ?>pm-concentration">
+                                <img id="img-pressure"         alt="" class="img-responsive airpi-graph" src="<?= $graph_src ?>pressure">
+                                <img id="img-temperature"      alt="" class="img-responsive airpi-graph" src="<?= $graph_src ?>temperature">
+                                <img id="img-humidity"         alt="" class="img-responsive airpi-graph" src="<?= $graph_src ?>humidity">
+                           <!-- <img id="img-pm-count"         alt="" class="img-responsive airpi-graph" src="<?= $graph_src ?>pm-count"> -->
                             </div>
                         </div><!-- /.panel-body -->
                     </div><!-- /.panel -->
