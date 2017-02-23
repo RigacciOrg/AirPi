@@ -7,6 +7,7 @@ DIRECTORIES = /etc/airpi /etc/host-config /var/lib/airpi /var/www/html
 
 AIRPI_CFG = /etc/airpi/airpi.cfg
 WWW_CONFIG = $(WWW_ROOT)/config.php
+WWW_INDEX = $(WWW_ROOT)/index.php
 ETC_WWW_CONFIG = /etc/airpi/www_config.php
 CRON_AIRPI = /etc/cron.d/airpi
 CRON_PMS5003 = /etc/cron.d/pms5003
@@ -58,6 +59,7 @@ install-html: install-directories
 	chown -R root:root $(WWW_ROOT)
 	test -e $(ETC_WWW_CONFIG) || install -m 0640 -o root -g www-data html/config-sample.php $(ETC_WWW_CONFIG)
 	test -e $(WWW_CONFIG) || ln -s $(ETC_WWW_CONFIG) $(WWW_CONFIG)
+	test -e $(WWW_INDEX) || ln -s station.php $(WWW_INDEX)
 
 .PHONY: uninstall
 uninstall:
