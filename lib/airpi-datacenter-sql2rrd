@@ -8,7 +8,7 @@
 # Make required transformation from database UTC timestamps
 # to RRD localtime POSIX timestamps.
 
-import calendar, datetime, logging, psycopg2, pytz, subprocess, sys, time
+import calendar, datetime, logging, os.path, psycopg2, pytz, subprocess, sys, time
 
 # RRD filename template: will be filled with station_id.
 RRD_NAME_TEMPLATE = '/var/lib/airpi/airpi-data-%s.rrd'
@@ -20,28 +20,31 @@ dsn = "host=localhost dbname=airpi user=airpi password=vai9Iel3"
 local_tz = pytz.timezone('CET')
 
 # Set logging for main program.
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.WARNING)
 
 #---------------------------------------------------------------
 # Get the latest POSIX timestamp from an RRD archive.
 # In case of errors return 0 (1970-01-01 00:00:00).
 #---------------------------------------------------------------
 def get_rrd_latest_timestamp(rrd_archive):
-    cmd = ['rrdtool', 'lastupdate', rrd_archive]
-    try:
-        subproc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=None)
-        output = subproc.communicate()[0]
-        retcode = subproc.returncode
-    except Exception, e:
-        logging.warning("Exception executing rrdtool lastupdate: %s" % (str(e),))
-        output = ''
-        retcode = -1
-    if retcode != 0 or output == '':
-        logging.warning("Execution of rrdtool returned error code %d" % (retcode,))
+    if not os.path.isfile(rrd_archive):
         timestamp = 0
     else:
-        last_line = output.splitlines()[-1]
-        timestamp = int(last_line.split(':')[0])
+        cmd = ['rrdtool', 'lastupdate', rrd_archive]
+        try:
+            subproc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=None)
+            output = subproc.communicate()[0]
+            retcode = subproc.returncode
+        except Exception, e:
+            logging.warning("Exception executing rrdtool lastupdate: %s" % (str(e),))
+            output = ''
+            retcode = -1
+        if retcode != 0 or output == '':
+            logging.warning("Execution of rrdtool returned error code %d" % (retcode,))
+            timestamp = 0
+        else:
+            last_line = output.splitlines()[-1]
+            timestamp = int(last_line.split(':')[0])
     return timestamp
 
 #---------------------------------------------------------------
