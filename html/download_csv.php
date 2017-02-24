@@ -76,7 +76,7 @@ if (array_key_exists('period', $_REQUEST)) {
         //print $cmd . "<br>\n";
         //error_log(basename(__FILE__) . ': Executing: ' . $cmd);
         header('Content-Type: text/csv; charset=utf-8');
-        $filename = 'airpi_' . $begin_date . '-' . $end_date . '.csv';
+        $filename = sprintf('airpi_%s_%s_%s.csv', sanitize_name(STATION_NAME), $begin_date, $end_date);
         header("Content-Disposition: attachment; filename=\"$filename\"");
         passthru($cmd, $ret);
         //error_log(basename(__FILE__) . ': Command returned ' . $ret);

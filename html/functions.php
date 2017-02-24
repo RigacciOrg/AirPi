@@ -6,6 +6,11 @@ function my_html($str) {
     return(htmlentities($str, ENT_COMPAT, 'UTF-8'));
 }
 
+// Remove all non-alphanumeric chars from a string.
+function sanitize_name($str) {
+    return strtolower(preg_replace('/[^0-9A-Z]+/i', '_', $str));
+}
+
 // Like sprintf(), but accepts only two arguments.
 // Return 'N/A' if value is NULL.
 function my_sprintf($format, $arg) {
