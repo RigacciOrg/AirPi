@@ -18,6 +18,8 @@ CFG_WEBCFG = /etc/host-config/webconfig.php
 CFG_OPTIONS = /etc/host-config/options
 CFG_PENDING = /etc/host-config/options-pending
 CFG_REGEXP = /etc/host-config/options-regexp
+CFG_IF_DHCP = /etc/network/interfaces.dhcp
+CFG_IF_STATIC = /etc/network/interfaces.static
 
 LIB_FILES := $(shell cd lib; echo airpi-* bme280* pms5003* rrd-graph-*)
 LIB_PYLIB := $(shell cd lib; echo Adafruit_BME280*)
@@ -48,6 +50,8 @@ install-config: install-directories
 
 .PHONY: install-webconfig
 install-webconfig:
+	test -e $(CFG_IF_DHCP)   || install -m 0644 -o root     -g root /dev/null $(CFG_IF_DHCP)
+	test -e $(CFG_IF_STATIC) || install -m 0644 -o root     -g root /dev/null $(CFG_IF_STATIC)
 	test -e $(CFG_WEBCFG)    || install -m 0640 -o www-data -g root /dev/null $(CFG_WEBCFG)
 	test -e $(CFG_PENDING)   || install -m 0640 -o www-data -g root /dev/null $(CFG_PENDING)
 	test -e $(CFG_OPTIONS)   || install -m 0640 -o www-data -g root webconfig/options $(CFG_OPTIONS)
