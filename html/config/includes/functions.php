@@ -66,7 +66,11 @@ function is_regexp($string, $regexp) {
     $options = array(
         'options' => array(
             'regexp' => '/' . $escaped_regexp . '/'));
-    return filter_var($string, FILTER_VALIDATE_REGEXP, $options);
+    if (filter_var($string, FILTER_VALIDATE_REGEXP, $options) === FALSE) {
+        return FALSE;
+    } else {
+        return TRUE;
+    }
 }
 
 //-------------------------------------------------------------------------
