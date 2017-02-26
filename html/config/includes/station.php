@@ -11,6 +11,7 @@ function DisplayStation() {
         $opt_new['STA_LAT']  = $_REQUEST['sta_lat'];
         $opt_new['STA_LON']  = $_REQUEST['sta_lon'];
         $opt_new['STA_ELE']  = $_REQUEST['sta_ele'];
+        $opt_new['PMS_SN']   = $_REQUEST['pms_sn'];
 
         // Check options validity.
         $opt_regexp = read_options('options-regexp');
@@ -53,6 +54,7 @@ function DisplayStation() {
     $sta_lat  = $opt['STA_LAT'];
     $sta_lon  = $opt['STA_LON'];
     $sta_ele  = $opt['STA_ELE'];
+    $pms_sn   = $opt['PMS_SN'];
 
 ?>
   <form role="form" action="?page=station" method="POST">
@@ -83,6 +85,12 @@ function DisplayStation() {
             <div class="form-group col-md-4">
               <label for="sta_ele"><?= my_html(_('Elevation')); ?></label>
               <input type="text" class="form-control" name="sta_ele" value="<?= my_html($sta_ele); ?>"/>
+            </div>
+          </div><!-- /.row -->
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="sta_ele"><?= my_html(_('PM Sensor ID')); ?></label>
+              <input type="text" class="form-control" name="pms_sn" value="<?= my_html($pms_sn); ?>"/>
             </div>
           </div><!-- /.row -->
         </div><!-- /.panel-body -->

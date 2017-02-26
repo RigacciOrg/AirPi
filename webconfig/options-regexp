@@ -9,16 +9,17 @@ NET_ALT_IPADDRESS=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
 NET_ALT_NETMASK=\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
 
 WIFI_ESSID1=.*
-WIFI_PASSWORD1=.*
+WIFI_PASSWORD1=.{8,63}
 WIFI_ESSID2=.*
-WIFI_PASSWORD2=.*
+WIFI_PASSWORD2=.{8,63}
 WIFI_ESSID3=.*
-WIFI_PASSWORD3=.*
+WIFI_PASSWORD3=.{8,63}
 
 STA_NAME=.*
 STA_LAT=[+-]?\d+(\.\d*)?
 STA_LON=[+-]?\d+(\.\d*)?
 STA_ELE=[+-]?\d+(\.\d*)?
+PMS_SN=.*
 
 HTTP_REQUEST_URL=.*
 HTTP_LOGIN=.*
