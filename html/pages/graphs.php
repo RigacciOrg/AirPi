@@ -1,6 +1,5 @@
 <?php
-require_once('functions.php');
-// $station_id is now defined.
+// $station_id is defined by the including script.
 $period = isset($_REQUEST['view']) ? $_REQUEST['view'] : 'weekly';
 switch ($period) {
     case 'daily':

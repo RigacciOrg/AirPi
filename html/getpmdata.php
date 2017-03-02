@@ -1,6 +1,6 @@
 <?php
-
 require_once('config.php');
+// $station_id is now defined.
 
 // Extract one year of data, back from today.
 // Strings represent dates in localtime (PHP-server idea of).
@@ -31,8 +31,9 @@ if (PG_CONNECT != '') {
         $sql  = "SELECT to_char(time_stamp AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, avg(value) AS pm10 FROM data";
         $sql .= " WHERE (time_stamp AT TIME ZONE 'UTC') >= '%s'::TIMESTAMP";
         $sql .= " AND (time_stamp AT TIME ZONE 'UTC') < '%s'::TIMESTAMP";
-        $sql .= " AND type = 'pm10' GROUP BY day ORDER BY day";
-        $sql = sprintf($sql, $from_day, $tomorrow);
+        $sql .= " AND type = 'pm10'";
+        $sql .= " AND station_id = %d GROUP BY day ORDER BY day";
+        $sql = sprintf($sql, $from_day, $tomorrow, $station_id);
         //print "$sql\n";
         $result = pg_query($db, $sql);
         while($row = pg_fetch_assoc($result)) {

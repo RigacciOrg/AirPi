@@ -1,6 +1,5 @@
 <?php
-require_once('functions.php');
-// $station_id is now defined.
+// $station_id is defined by the including script.
 ?>
             <div class="row">
                 <div class="col-lg-12">

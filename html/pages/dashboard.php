@@ -1,8 +1,6 @@
 <?php
-require_once('functions.php');
-// $station_id is now defined.
+// $station_id is defined by the including script.
 $sensor = get_latest_data($station_id);
-
 $pm10_icon = pm10_icon($sensor['pm10']);
 $pressure_icon = pressure_icon($sensor['pressure']);
 $tendency_icon = tendency_icon(pressure_diff_3h());

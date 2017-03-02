@@ -6,8 +6,8 @@ var evtData = []; // evtData.push({startDate, endDate, pm10}) for tooltip
 $(document).ready(function() {
     $('#data-download').on('click', 'a', onDownloadClick);
     if ($("#calendar").length) {
-        var currentYear = new Date().getFullYear();
-        $.getJSON('getpmdata.php', getCalData);
+        var station_id = $("#calendar").attr("station-id");
+        $.getJSON('getpmdata.php?id=' + station_id, getCalData);
     }
 });
 
