@@ -14,6 +14,7 @@ from Adafruit_BME280 import *
 
 NAME = os.path.basename(sys.argv[0])
 BME280_STATUS = '/var/run/bme280.status'
+CFG_FILE = '/etc/airpi/airpi.cfg'
 READ_SAMPLES = 7
 MAX_CACHE_SECONDS = 20
 
@@ -56,8 +57,15 @@ except Exception, e:
 
 if temperature == None or pressure == None or humidity == None:
     # Read from cache failed, get a real measurement.
+    import ConfigParser
+    DEFAULTS = { 'I2C_ADDRESS': '0x77' }
+    config = ConfigParser.RawConfigParser(DEFAULTS)
+    config.read(CFG_FILE)
+    if not config.has_section('bme280'):
+        config.add_section('bme280')
+    I2C_ADDRESS = int(config.get('bme280', 'I2C_ADDRESS'), 0)
     try:
-        sensor = BME280(mode=BME280_OSAMPLE_16)
+        sensor = BME280(mode=BME280_OSAMPLE_16, address=I2C_ADDRESS)
         temperature, pressure, humidity = readBME280All(sensor, READ_SAMPLES)
     except Exception, e:
         print "ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e))
