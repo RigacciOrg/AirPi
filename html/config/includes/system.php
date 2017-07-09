@@ -40,7 +40,9 @@ function DisplaySystem() {
             echo '<div class="alert alert-warning">' . my_html(_('Applying Pending Config and Rebooting Now!')) . '</div>';
             if (save_pending() == TRUE) {
                 if (apply_config() == 0) {
-                    //$result = shell_exec('sudo /sbin/shutdown -r now  > /dev/null &');
+                    $result = shell_exec('/bin/sync');
+                    sleep(1);
+                    $result = shell_exec('sudo /sbin/shutdown -r now  > /dev/null &');
                     continue;
                 }
             }

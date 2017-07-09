@@ -179,7 +179,7 @@ function save_pending() {
 // Apply options to all the configuration files.
 //-------------------------------------------------------------------------
 function apply_config() {
-    $cmd = 'sudo /usr/sbin/host-config -n';
+    $cmd = 'sudo /usr/sbin/host-config';
     $output = array();
     array_push($output, 'Executing host-config:');
     exec($cmd, $output, $return_var);
