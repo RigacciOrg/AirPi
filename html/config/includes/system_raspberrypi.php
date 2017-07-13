@@ -23,6 +23,7 @@ function sys_RPiVersion() {
         '0012'   => 'Model A+',
         'a01041' => 'a01041',
         'a21041' => 'a21041',
+        '900021' => 'Model A+ V1.1 (512 MB)',
         '900032' => 'Model B+ V1.2 (512 MB)',
         '900092' => 'PiZero',
         'a02082' => 'Pi 3 Model B',
