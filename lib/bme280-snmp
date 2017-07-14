@@ -65,7 +65,7 @@ if temperature == None or pressure == None or humidity == None:
         config.add_section('bme280')
     I2C_ADDRESS = int(config.get('bme280', 'I2C_ADDRESS'), 0)
     try:
-        sensor = BME280(mode=BME280_OSAMPLE_16, address=I2C_ADDRESS)
+        sensor = BME280(t_mode=BME280_OSAMPLE_16, p_mode=BME280_OSAMPLE_16, h_mode=BME280_OSAMPLE_16, address=I2C_ADDRESS)
         temperature, pressure, humidity = readBME280All(sensor, READ_SAMPLES)
     except Exception, e:
         print "ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e))
