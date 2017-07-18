@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+echo "Extract hourly values for pm10, pressure, temperature and humidity."
+echo "Times are represented in wall-clock time."
+
+read -p "Begin hour (included, YYYY-mm-dd HH): " t0
+read -p "End hour   (included, YYYY-mm-dd HH): " t1
+
+cp "/var/lib/airpi/airpi-data.db" "/tmp/airpi-data.$$.db"
+
+for type in 'pm10' 'p' 't' 'hum'; do
+    cat << EOF | sqlite3 "/tmp/airpi-data.$$.db"
+SELECT strftime('%Y-%m-%d %H', timestamp, 'localtime') AS hour, type, avg(value) AS $type
+    FROM data WHERE hour >= '$t0' AND hour <= '$t1'
+    AND type = '$type' GROUP BY hour ORDER BY hour;
+EOF
+done
+
+rm "/tmp/airpi-data.$$.db"

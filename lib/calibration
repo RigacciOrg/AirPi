@@ -1,0 +1,159 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Requires Debian package python-scipy
+
+"""
+Usage: calibration [reference_values_file] [measured_values_file]
+
+Make data graphs and scattering plots for sensors calibration.
+
+Take two input files: the first contains data from the reference 
+station, the second contains data from the calibrating station. 
+Each file is formatted like this:
+
+ 2017-07-12 15|pm10|19.5325
+ 2017-07-12 15|p|1006.6383
+ 2017-07-12 15|t|33.7033
+ 2017-07-12 15|hum|43.2791
+
+Uses a linear least-squares regression to calculate a best fit. 
+Slope and intercept values are shown into scattering graphs. 
+Calibrated values can be calculated with the formula:
+
+ value = measure * slope + intercept
+"""
+
+import os, scipy, scipy.stats, subprocess, sys
+
+if len(sys.argv) < 3:
+    print __doc__
+    sys.exit(1)
+
+file1 = sys.argv[1]
+file2 = sys.argv[2]
+
+types  = ['pm10', 'p', 't', 'hum']
+title  = {'pm10': 'PM10',  'p': 'Pressure', 't': 'Temperature', 'hum': 'Humidity'}
+ylabel = {'pm10': 'μg/m3', 'p': 'hPa',      't': '°C',          'hum': '%'}
+
+sensor_fname_template = "dat_%s_%s"
+regres_fname_template = "dat_fit_%s"
+calibr_fname_template = "cal_%s"
+
+# Read input files and fill the "points" multidimensional list.
+points = {}
+for input_file in [file1, file2]:
+    points[input_file] = {}
+    for sensor in types: points[input_file][sensor] = {}
+    with open(input_file) as f:
+        for line in f:
+            timestamp, sensor, value = line.strip().split('|')
+            points[input_file][sensor][timestamp] = value
+
+# Write data files for gnuplot feeding.
+for input_file in [file1, file2]:
+    for sensor in types:
+        data_file = sensor_fname_template % (sensor, input_file)
+        with open(data_file, 'w') as f:
+            for t in sorted(points[input_file][sensor].keys()):
+                f.write("%s|%s\n" % (t, points[input_file][sensor][t]))
+
+slope = {}
+intercept = {}
+rvalue = {}
+stderr = {}
+
+# Calculate linear regression.
+for sensor in types:
+
+    serie1 = []
+    serie2 = []
+    for t in sorted(points[file1][sensor].keys()):
+        serie1.append(float(points[file1][sensor][t]))
+        serie2.append(float(points[file2][sensor][t]))
+
+    linregress = scipy.stats.linregress(serie1, serie2)
+    slope[sensor]     = linregress[0]
+    intercept[sensor] = linregress[1]
+    rvalue[sensor]    = linregress[2]
+    stderr[sensor]    = linregress[4]
+
+    # Write linear regression data files.
+    data_file = regres_fname_template % (sensor,)
+    with open(data_file, 'w') as f:
+        for t in sorted(points[file2][sensor].keys()):
+            value = (float(points[file2][sensor][t]) - intercept[sensor]) / slope[sensor]
+            f.write("%s|%s\n" % (t, value))
+
+    # Write scatter plot data files.
+    data_file = calibr_fname_template % (sensor,)
+    with open(data_file, 'w') as f:
+        for t in sorted(points[file1][sensor].keys()):
+            f.write("%f|%f\n" % (float(points[file1][sensor][t]), float(points[file2][sensor][t])))
+
+#---------------------------------------------------------------
+# Make Gnuplot graphs.
+#---------------------------------------------------------------
+for sensor in types:
+
+    # Make data points graphs.
+    graph_name = "plot_values_%s.png" % (sensor)
+    data_file1 = sensor_fname_template % (sensor, file1)
+    data_file2 = sensor_fname_template % (sensor, file2)
+    data_file3 = regres_fname_template % (sensor,)
+    gnuplot_conf = []
+    gnuplot_conf.append('set terminal png size 1600,800 font ",18"')
+    gnuplot_conf.append('set xdata time')
+    gnuplot_conf.append('set timefmt "%Y-%m-%d %H"')
+    gnuplot_conf.append('set output "%s"' % (graph_name,))
+    gnuplot_conf.append('set grid')
+    gnuplot_conf.append('set xlabel "Date/Time"')
+    gnuplot_conf.append('set format x "%d/%m\\n%H:%M"')
+    gnuplot_conf.append('set ylabel "%s"' % (ylabel[sensor],))
+    gnuplot_conf.append('set title "%s"' % (title[sensor],))
+    gnuplot_conf.append('set key left box')
+    gnuplot_conf.append('set key box width -3')
+    gnuplot_conf.append('set key box height 1.2')
+    gnuplot_conf.append('set datafile separator "|"')
+    gnuplot_conf.append('set style line 1 linewidth 4 linecolor rgb "#FF0000"')
+    gnuplot_conf.append('set style line 2 linewidth 4 linecolor rgb "#0000C0"')
+    gnuplot_conf.append('set style line 3 linewidth 2 linecolor rgb "#00C000" pointtype 6 pointsize 2')
+    gnuplot_conf.append('plot "%s" using 1:2 index 0 title "%s" with lines linestyle 1, "%s" using 1:2 index 0 title "%s" with lines linestyle 2, "%s" using 1:2 index 0 title "Linear Regression Fit" with linespoints linestyle 3' % (data_file1, file1, data_file2, file2, data_file3))
+
+    p = subprocess.Popen('gnuplot', stdin=subprocess.PIPE)
+    p.communicate(os.linesep.join(gnuplot_conf))
+
+    os.unlink(data_file1)
+    os.unlink(data_file2)
+    os.unlink(data_file3)
+
+    # Make scattering plot for calibration: data points and linear regression interpolation.
+    graph_name = "plot_scatter_%s.png" % (sensor,)
+    data_file1 = calibr_fname_template % (sensor,)
+    gnuplot_conf = []
+    gnuplot_conf.append('set terminal png size 1200,1200 font ",18"')
+    gnuplot_conf.append('set output "%s"' % (graph_name,))
+    gnuplot_conf.append('set grid')
+    gnuplot_conf.append('set ylabel "Reference Station %s"' % (file1,))
+    gnuplot_conf.append('set xlabel "Station %s"' % (file2,))
+    gnuplot_conf.append('set title "%s Sensor\\n\\nScattering Plot for Linear Regression Calibration\\nSlope = %f, Intercept = %f\\nStandard error = %f, Correlation coeff. R = %f"' % (title[sensor], slope[sensor], intercept[sensor], stderr[sensor], rvalue[sensor]))
+    gnuplot_conf.append('set key left box')
+    gnuplot_conf.append('set key box height 1.2')
+    gnuplot_conf.append('set datafile separator "|"')
+    gnuplot_conf.append('f(x) = x * %f + %f' % (slope[sensor], intercept[sensor]))
+    gnuplot_conf.append('set style line 1 linecolor rgb "red" pointtype 7 pointsize 3')
+    gnuplot_conf.append('set style line 2 linecolor rgb "blue" linewidth 4')
+    gnuplot_conf.append('plot "%s" using 1:2 index 0 title "Data Points" with points ls 1, f(x) title "Linear Regression" with lines ls 2' % (data_file1,))
+
+    p = subprocess.Popen('gnuplot', stdin=subprocess.PIPE)
+    p.communicate(os.linesep.join(gnuplot_conf))
+
+    os.unlink(data_file1)
