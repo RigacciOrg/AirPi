@@ -21,7 +21,7 @@ CFG_REGEXP = /etc/host-config/options-regexp
 CFG_IF_DHCP = /etc/network/interfaces.dhcp
 CFG_IF_STATIC = /etc/network/interfaces.static
 
-LIB_FILES := $(shell cd lib; echo airpi-* bme280* pms5003* rrd-graph-*)
+LIB_FILES := $(shell cd lib; echo airpi-* bme280* calibration* pms5003* rrd-graph-*)
 LIB_PYLIB := $(shell cd lib; echo Adafruit_BME280*)
 
 .PHONY: all
