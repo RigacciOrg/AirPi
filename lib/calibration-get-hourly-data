@@ -1,7 +1,9 @@
 #!/bin/sh -e
 
-echo "Extract hourly values for pm10, pressure, temperature and humidity."
-echo "Times are represented in wall-clock time."
+echo 1>&2
+echo "Extract hourly values for pm10, pressure, temperature and humidity." 1>&2
+echo "Times are represented in wall-clock time." 1>&2
+echo 1>&2
 
 read -p "Begin hour (included, YYYY-mm-dd HH): " t0
 read -p "End hour   (included, YYYY-mm-dd HH): " t1
