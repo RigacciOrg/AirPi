@@ -20,6 +20,8 @@ STA_LAT=[+-]?\d+(\.\d*)?
 STA_LON=[+-]?\d+(\.\d*)?
 STA_ELE=[+-]?\d+(\.\d*)?
 PMS_SN=.*
+PMS5003_SERIAL=/dev/((ttyAMA0)|(serial0))
+BME280_I2C=0x[0-9A-Fa-f]{2}
 
 HTTP_REQUEST_URL=.*
 HTTP_LOGIN=.*

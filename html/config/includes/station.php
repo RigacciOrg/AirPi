@@ -7,11 +7,13 @@ function DisplayStation() {
     $opt_new = array();
     if (isset($_POST['UpdateStationConfig'])) {
         if (!CSRFValidate()) exit('Invalid CSRF Token');
-        $opt_new['STA_NAME'] = $_REQUEST['sta_name'];
-        $opt_new['STA_LAT']  = $_REQUEST['sta_lat'];
-        $opt_new['STA_LON']  = $_REQUEST['sta_lon'];
-        $opt_new['STA_ELE']  = $_REQUEST['sta_ele'];
-        $opt_new['PMS_SN']   = $_REQUEST['pms_sn'];
+        $opt_new['STA_NAME']       = $_REQUEST['sta_name'];
+        $opt_new['STA_LAT']        = $_REQUEST['sta_lat'];
+        $opt_new['STA_LON']        = $_REQUEST['sta_lon'];
+        $opt_new['STA_ELE']        = $_REQUEST['sta_ele'];
+        $opt_new['PMS_SN']         = $_REQUEST['pms_sn'];
+        $opt_new['PMS5003_SERIAL'] = $_REQUEST['pms5003_serial'];
+        $opt_new['BME280_I2C']     = $_REQUEST['bme280_i2c'];
 
         // Check options validity.
         $opt_regexp = read_options('options-regexp');
@@ -50,11 +52,13 @@ function DisplayStation() {
         $status->addMessage(sprintf(_('There are %d pending changes'), count($opt_pending)), 'danger');
     }
     $opt = array_merge($opt, $opt_pending, $opt_new);
-    $sta_name = $opt['STA_NAME'];
-    $sta_lat  = $opt['STA_LAT'];
-    $sta_lon  = $opt['STA_LON'];
-    $sta_ele  = $opt['STA_ELE'];
-    $pms_sn   = $opt['PMS_SN'];
+    $sta_name       = $opt['STA_NAME'];
+    $sta_lat        = $opt['STA_LAT'];
+    $sta_lon        = $opt['STA_LON'];
+    $sta_ele        = $opt['STA_ELE'];
+    $pms_sn         = $opt['PMS_SN'];
+    $pms5003_serial = $opt['PMS5003_SERIAL'];
+    $bme280_i2c     = $opt['BME280_I2C'];
 
 ?>
   <form role="form" action="?page=station" method="POST">
@@ -89,8 +93,18 @@ function DisplayStation() {
           </div><!-- /.row -->
           <div class="row">
             <div class="form-group col-md-6">
-              <label for="sta_ele"><?= my_html(_('PM Sensor ID')); ?></label>
+              <label for="pms_sn"><?= my_html(_('PM Sensor ID')); ?></label>
               <input type="text" class="form-control" name="pms_sn" value="<?= my_html($pms_sn); ?>"/>
+            </div>
+          </div><!-- /.row -->
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="pms5003_serial"><?= my_html(_('PM Serial Device')); ?></label>
+              <input type="text" class="form-control" name="pms5003_serial" value="<?= my_html($pms5003_serial); ?>"/>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="bme280_i2c"><?= my_html(_('BME280 I2C Address')); ?></label>
+              <input type="text" class="form-control" name="bme280_i2c" value="<?= my_html($bme280_i2c); ?>"/>
             </div>
           </div><!-- /.row -->
         </div><!-- /.panel-body -->
