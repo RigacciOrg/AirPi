@@ -59,7 +59,7 @@ function sys_uptime() {
 }
 
 function sys_memused() {
-    exec("free -m | awk '/Mem:/ { total=$2 } /buffers\/cache/ { used=$3 } END { print used/total*100}'", $memarray);
+    exec("cat /proc/meminfo | awk '/MemTotal:/ { total=$2 } /MemAvailable:/ { available=$2 } END { print (1-(available/total))*100}'", $memarray);
     $memused = floor($memarray[0]);
     if     ($memused > 80) { $memused_status = 'danger';  }
     elseif ($memused > 60) { $memused_status = 'warning'; }
