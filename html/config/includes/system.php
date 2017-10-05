@@ -43,7 +43,6 @@ function DisplaySystem() {
                     $result = shell_exec('/bin/sync');
                     sleep(1);
                     $result = shell_exec('sudo /sbin/shutdown -r now  > /dev/null &');
-                    continue;
                 }
             }
         }
