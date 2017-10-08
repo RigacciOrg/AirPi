@@ -30,16 +30,33 @@
 # http://www.rigacci.org/wiki/lib/exe/fetch.php/doc/appunti/hardware/raspberrypi/plantower-pms5003-manual_v2-3.pdf
 #
 # Author        Niccolo Rigacci <niccolo@rigacci.org>
-# Version       0.1.2  2017-02-20
+# Version       0.1.3  2017-10-02
 
 # Required Debian packages:
 # apt-get install python-serial
 
 import datetime, os, os.path, serial, sys, time
 import logging, logging.handlers
+import ConfigParser
 
-# Make several reads, then calculate the average.
-AVERAGE_READS = 16
+CFG_FILE = '/etc/airpi/airpi.cfg'
+DEFAULTS = {
+    'DEVICE':             '/dev/ttyAMA0',
+    'STATUS_FILE':        '/run/pms5003.status',    # Status file where to save the last averaged reading.
+    'LOG_LEVEL':          'DEBUG',                  # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
+    'PMS5003_RESET_GPIO': '/sys/class/gpio/gpio17', # GPIO wired to RESET line of PMS5003, must be already exported and set to output.
+    'AVERAGE_READS':      '16'                      # Make several reads, then calculate the average.
+}
+config = ConfigParser.RawConfigParser(DEFAULTS)
+try: config.read(CFG_FILE)
+except: pass
+if not config.has_section('pms5003'): config.add_section('pms5003')
+DEVICE             = config.get('pms5003', 'DEVICE')
+STATUS_FILE        = config.get('pms5003', 'STATUS_FILE')
+LOG_LEVEL          = config.get('pms5003', 'LOG_LEVEL')
+PMS5003_RESET_GPIO = config.get('pms5003', 'PMS5003_RESET_GPIO')
+AVERAGE_READS      = config.getint('pms5003', 'AVERAGE_READS')
+
 # Seconds to sleep before repeating averaged read. Use -1 to exit.
 AVERAGE_READS_SLEEP = -1
 
@@ -52,8 +69,6 @@ MAX_FRAME_ERRORS = 10
 WAIT_AFTER_WAKEUP = 40
 # Total Response Time is 10 seconds (sensor specifications).
 MAX_TOTAL_RESPONSE_TIME = 12
-# GPIO wired to RESET line of PMS5003, must be already exported and set to output.
-PMS5003_RESET_GPIO = '/sys/class/gpio/gpio17'
 
 # Normal data frame length.
 DATA_FRAME_LENGTH = 28
@@ -66,11 +81,6 @@ SERIAL_TIMEOUT = 2.0
 # Calculate average on this output data.
 AVERAGE_FIELDS = ['data1', 'data2', 'data3', 'data4', 'data5', 'data6', 'data7', 'data8', 'data9', 'data10', 'data11', 'data12']
 
-# Status file where to save the last averaged reading.
-STATUS_FILE = '/run/pms5003.status'
-
-# From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = 'DEBUG'
 # Log to stdout or to file/syslog.
 LOG_TO_STDOUT = sys.stdin.isatty()
 # False for syslog logging, filename for file logging.
