@@ -24,6 +24,17 @@ CFG_IF_STATIC = /etc/network/interfaces.static
 LIB_FILES := $(shell cd lib; echo airpi-* bme280* calibration* pms5003* rrd-graph-*)
 LIB_PYLIB := $(shell cd lib; echo Adafruit_BME280*)
 
+# Check if an SNMP group exists.
+ifneq ($(shell grep '^Debian-snmp:' /etc/group),)
+SNMP_GROUP = Debian-snmp
+else
+ifneq ($(shell grep '^snmp:' /etc/group),)
+SNMP_GROUP = snmp
+else
+SNMP_GROUP = root
+endif
+endif
+
 .PHONY: all
 all: ;
 
@@ -46,7 +57,7 @@ install-config: install-directories
 	test -e $(CRON_AIRPI)    || install -m 0644 -o root -g root examples/cron.airpi $(CRON_AIRPI)
 	test -e $(CRON_PMS5003)  || install -m 0644 -o root -g root examples/cron.pms5003 $(CRON_PMS5003)
 	test -e $(SUDOERS)       || install -m 0644 -o root -g root examples/sudoers.airpi $(SUDOERS)
-	test -e $(BME280_STATUS) || install -m 0664 -o root -g snmp /dev/null $(BME280_STATUS)
+	test -e $(BME280_STATUS) || install -m 0664 -o root -g $(SNMP_GROUP) /dev/null $(BME280_STATUS)
 
 .PHONY: install-webconfig
 install-webconfig:
