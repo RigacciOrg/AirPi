@@ -14,6 +14,7 @@ CRON_PMS5003 = /etc/cron.d/pms5003
 SUDOERS = /etc/sudoers.d/airpi
 BME280_STATUS = /var/run/bme280.status
 
+CFG_DIR = /etc/host-config
 CFG_WEBCFG = /etc/host-config/webconfig.php
 CFG_OPTIONS = /etc/host-config/options
 CFG_PENDING = /etc/host-config/options-pending
@@ -68,6 +69,7 @@ install-webconfig:
 	test -e $(CFG_PENDING)   || install -m 0640 -o www-data -g root /dev/null $(CFG_PENDING)
 	test -e $(CFG_OPTIONS)   || install -m 0640 -o www-data -g root webconfig/options $(CFG_OPTIONS)
 	install -m 0644 -o root -g root webconfig/options-regexp $(CFG_REGEXP)
+	rm -rf $(CFG_DIR)/templates && cp -pr webconfig/templates $(CFG_DIR)
 	install -m 755 -o root -g root -D -t $(PREFIX)/sbin $(addprefix webconfig/sbin/, $(CFG_SBIN))
 
 .PHONY: install-html
