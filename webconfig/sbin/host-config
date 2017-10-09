@@ -1,0 +1,172 @@
+#!/usr/bin/python
+#
+# Copyright (C) 2008 Niccolo Rigacci
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# Author:       Niccolo Rigacci <niccolo@rigacci.org>
+#
+# Version:      1.0     2008-09-25
+
+
+import filecmp, os, re, shutil, sys, tempfile
+from optparse import OptionParser
+
+rules_file           = "/etc/host-config/options-regexp"
+options_file         = "/etc/host-config/options"
+templates_dir        = "/etc/host-config/templates"
+templates_custom_dir = "/etc/host-config/templates-custom"
+conffiles_on_hold    = "/etc/host-config/conffiles-on-hold"
+placeholder_prefix   = "@@_"
+placeholder_suffix   = "_@@"
+
+# Where to apply templates (empty string for root directory).
+target_dir = ""
+
+#--------------------------------------------------------------------------
+# Parse command line options.
+#--------------------------------------------------------------------------
+parser = OptionParser()
+parser.add_option("-d", dest="debug", help="set debug level (0-4)")
+parser.add_option("-f", dest="file",  help="apply options to a single file")
+parser.add_option("-n", action="store_true", dest="dry_run", help="test: show what would have been done, but do nothing")
+(options, args) = parser.parse_args()
+
+if options.debug:
+    debug = int(options.debug)
+else:
+    debug = 1
+
+#--------------------------------------------------------------------------
+# Read validation rules: store them in "rule" dictionary.
+#--------------------------------------------------------------------------
+if debug > 1: print "Reading validation expressions from %s" % rules_file
+rule = {}
+re_rule = re.compile("\s*([_0-9A-Za-z]+)=(.*)")
+f = open(rules_file, "r")
+for line in f:
+    match = re_rule.match(line.strip())
+    if match:
+        key = match.group(1)
+        val = match.group(2)
+        rule[key] = val
+        if debug > 3: print "  %s=%s" % (key, val)
+f.close()
+
+#--------------------------------------------------------------------------
+# Read options file: store them in "option" dictionary.
+#--------------------------------------------------------------------------
+if debug > 1: print "Reading options from %s" % options_file
+option = {}
+errors = False
+re_option = re.compile("\s*([_0-9A-Za-z]+)=(.*)")
+f = open(options_file, "r")
+for line in f:
+    match = re_option.match(line.strip())
+    if match:
+        key = match.group(1)
+        val = match.group(2)
+        if not rule.has_key(key):
+            errors = True
+            print "  Missing validation expression for: %s" % (key)
+            break
+        else:
+            if re.compile(rule[key] + "$").match(val):
+                option[key] = val
+                if debug > 3: print "  %s=%s" % (key, val)
+            else:
+                errors = True
+                print "  Invalid option: %s=%s" % (key, val)
+                break
+f.close()
+if errors:
+    print "ERROR: Can't validate options."
+    sys.exit(1)
+
+#--------------------------------------------------------------------------
+# Read on-hold conf files: store them in "on_hold" list.
+#--------------------------------------------------------------------------
+if debug > 1: print "Reading on-hold files list from %s" % conffiles_on_hold
+on_hold = []
+try:
+    f = open(conffiles_on_hold, "r")
+    for line in f:
+        line = line.strip()
+        if not line.startswith("#"):
+            on_hold.append(line)
+            if debug > 4: print "  %s" % (line)
+    f.close()
+except:
+    pass
+
+#--------------------------------------------------------------------------
+# Walk through templates directory.
+#--------------------------------------------------------------------------
+if debug > 1: print "Walking through templates directory..."
+n = len(templates_dir)
+for root, dirs, files in os.walk(templates_dir):
+    for file in files:
+
+        template = os.path.join(root, file)
+        target_file = target_dir + template[n:]
+
+        # If a file was specified on the command line, skipp all the others.
+        if options.file and options.file != target_file:
+            continue
+
+        if not os.path.isfile(target_file):
+            if debug > 0: print "  Stale template for missing file %s" % (target_file)
+            continue
+
+        if debug > 1: print "  Found template for %s" % (target_file)
+        # If a custom template exists, use it.
+        template_custom = templates_custom_dir + template[n:]
+        if os.path.isfile(template_custom):
+            template = template_custom
+            if debug > 1: print "    Using custom template %s" % (template)
+
+        # Read template, fill placeholders with values and write to a temp file.
+        f = open(template, "r")
+        (tmp, temp_file) = tempfile.mkstemp()
+        placeholder = re.compile(placeholder_prefix + "(\w+)" + placeholder_suffix)
+        r = 0
+        for line in f:
+            r += 1
+            match = placeholder.findall(line)
+            for key in match:
+                if debug > 3: print "    Row %d: placeholder for %s" % (r, key)
+                if option.has_key(key):
+                    val = option[key]
+                else:
+                    if debug > 0: print "    Option %s is not defined, assuming blank" % (key)
+                    val = ""
+                line = re.sub(placeholder_prefix + key + placeholder_suffix, val, line)
+            os.write(tmp, line)
+        f.close()
+        os.close(tmp)
+
+        # Compare temp with actual file, rewrite the latter if differ.
+        if filecmp.cmp(target_file, temp_file):
+            if debug > 0: print "  File is up to date: %s" % (target_file)
+        else:
+            if target_file in on_hold:
+                print "  *** File should be updated, but it is on-hold: %s" % (target_file)
+            else:
+                if options.dry_run:
+                    print "  *** Testing mode: file will not be changed: %s" % (target_file)
+                else:
+                    if debug > 0: print "  *** Updating file: %s" % (target_file)
+                    shutil.copyfile(temp_file, target_file)
+        os.unlink(temp_file)
