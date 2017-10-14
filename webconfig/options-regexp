@@ -15,7 +15,7 @@ WIFI_PASSWORD2=.{8,63}
 WIFI_ESSID3=.*
 WIFI_PASSWORD3=.{8,63}
 
-STA_NAME=.*
+STA_NAME=[ !#&'()+,:;0-9A-Za-z_-]{1,64}
 STA_LAT=[+-]?\d+(\.\d*)?
 STA_LON=[+-]?\d+(\.\d*)?
 STA_ELE=[+-]?\d+(\.\d*)?
