@@ -149,6 +149,7 @@ for sensor in types:
     gnuplot_conf.append('set key box height 1.2')
     gnuplot_conf.append('set datafile separator "|"')
     gnuplot_conf.append('f(x) = x * %f + %f' % (slope[sensor], intercept[sensor]))
+    print "%-5s slope = %.5f, intercept = %+.5f, R = %.5f" % (sensor, slope[sensor], intercept[sensor], rvalue[sensor])
     gnuplot_conf.append('set style line 1 linecolor rgb "red" pointtype 7 pointsize 3')
     gnuplot_conf.append('set style line 2 linecolor rgb "blue" linewidth 4')
     gnuplot_conf.append('plot "%s" using 1:2 index 0 title "Data Points" with points ls 1, f(x) title "Linear Regression" with lines ls 2' % (data_file1,))
