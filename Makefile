@@ -58,7 +58,7 @@ install-config: install-directories
 	test -e $(AIRPI_CFG)     || install -m 0640 -o root -g www-data examples/airpi.cfg $(AIRPI_CFG)
 	test -e $(CRON_AIRPI)    || install -m 0644 -o root -g root examples/cron.airpi $(CRON_AIRPI)
 	test -e $(CRON_PMS5003)  || install -m 0644 -o root -g root examples/cron.pms5003 $(CRON_PMS5003)
-	test -e $(SUDOERS)       || install -m 0644 -o root -g root examples/sudoers.airpi $(SUDOERS)
+	test -e $(SUDOERS)       || install -m 0440 -o root -g root examples/sudoers.airpi $(SUDOERS)
 	test -e $(BME280_STATUS) || install -m 0664 -o root -g $(SNMP_GROUP) /dev/null $(BME280_STATUS)
 
 .PHONY: install-webconfig
