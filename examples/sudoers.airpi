@@ -1,5 +1,5 @@
 Cmnd_Alias AIRPI_WEBMIN = /sbin/poweroff,  \
                           /sbin/shutdown,  \
-                          /usr/sbin/host-config
+                          /usr/local/sbin/host-config
 
 www-data ALL=(ALL) NOPASSWD: AIRPI_WEBMIN
