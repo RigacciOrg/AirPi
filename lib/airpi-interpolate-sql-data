@@ -9,7 +9,7 @@
 #
 # The "interp" table must be something like:
 #
-# SELECT * FROM interp ORDER BY time_stamp;
+# SELECT * FROM interp ORDER BY station_id, time_stamp;
 #
 #  station_id |     time_stamp      | type |  slope  | intercept 
 # ------------+---------------------+------+---------+-----------
