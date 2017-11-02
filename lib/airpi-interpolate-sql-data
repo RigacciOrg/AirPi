@@ -1,0 +1,167 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2017 Niccolo Rigacci <niccolo@rigacci.org>
+#
+# Read raw sensor data from "data" table, make a linear interpolation
+# using parameters from the "interp" table and write interpolated
+# data into "data_interp" table.
+#
+# The "interp" table must be something like:
+#
+# SELECT * FROM interp ORDER BY time_stamp;
+#
+#  station_id |     time_stamp      | type |  slope  | intercept 
+# ------------+---------------------+------+---------+-----------
+#           2 | 2017-01-12 00:00:00 | pm10 |       1 |         0
+#           2 | 2017-07-18 00:00:00 | pm10 | 1.04732 |  -0.21683
+#           2 | 2017-10-14 00:00:00 | pm10 | 1.42597 |   0.64652
+#           2 | 2017-10-24 00:00:00 | pm10 | 1.41703 |    2.5997
+#
+# Required Debian packages:
+# python-configargparse python-psycopg2 python-numpy
+
+import ConfigParser, datetime, numpy, os.path, psycopg2, sys, time
+
+CFG_FILE = '/etc/airpi/airpi.cfg'
+NAME = os.path.basename(sys.argv[0])
+
+if len(sys.argv) < 2:
+    print "Usage: %s STATION_ID" % (NAME)
+    sys.exit(1)
+station_id = sys.argv[1]
+data_type = 'pm10'
+
+#---------------------------------------------------------------
+# Read configuration file.
+#---------------------------------------------------------------
+try:
+    DEFAULTS = {
+        'PG_CONNECT': ''
+    }
+    config = ConfigParser.RawConfigParser(DEFAULTS)
+    config.read(CFG_FILE)
+    PG_CONNECT = config.get('pgsql', 'PG_CONNECT')
+except Exception, e:
+    print "ERROR: %s: Reading configuration file: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+#---------------------------------------------------------------
+# Connect to the database.
+#---------------------------------------------------------------
+try:
+    conn = psycopg2.connect(PG_CONNECT)
+    curs = conn.cursor()
+    curs2 = conn.cursor()
+except Exception, e:
+    print "ERROR: %s: Cannot connect database: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+#---------------------------------------------------------------
+# Get interpolation coefficients: slope and intercept value.
+#---------------------------------------------------------------
+time_points = []
+slope_points = []
+intercept_points = []
+
+sql  = "SELECT time_stamp, slope, intercept FROM interp"
+sql += " WHERE station_id = %s AND type = %s"
+sql += " ORDER BY time_stamp"
+try:
+    curs.execute(sql, (station_id, data_type))
+except Exception, e:
+    print "ERROR: %s: Cannot execute query: %s" % (NAME, str(e),)
+    sys.exit(1)
+for row in curs:
+    # NOTICE: time_stamp is UTC.
+    t = time.mktime(row[0].timetuple())
+    time_points.append(t)
+    slope_points.append(row[1])
+    intercept_points.append(row[2])
+
+# Add a dummy interpolation point, if none found.
+if len(time_points) == 0:
+    time_points.append(time.time())
+    slope_points.append(1.0)
+    intercept_points.append(0.0)
+
+## Define interpolation arrays (override database contents).
+#time_points      = []
+#time_points_str  = ['2017-01-12', '2017-07-18', '2017-10-14', '2017-10-24']
+#slope_points     = [1.0,           1.04732,      1.42597,      1.41703]
+#intercept_points = [0.0,          -0.21683,     +0.64652,     +2.59970]
+#for t in time_points_str:
+#    dt = datetime.datetime.strptime(t, '%Y-%m-%d')
+#    time_points.append(time.mktime(dt.timetuple()))
+#
+#print "time_points", time_points
+#print "slope_points", slope_points
+#print "intercept_points", intercept_points
+
+# Interpolation values at the right of the interval.
+right_slope = slope_points[-1] 
+right_intercept = intercept_points[-1] 
+
+#---------------------------------------------------------------
+# Get the most recent timestamp of interpolated data.
+#---------------------------------------------------------------
+sql  = "SELECT max(time_stamp) FROM data_interp"
+sql += " WHERE station_id = %s"
+sql += " AND type = %s"
+#print sql % (station_id, data_type)
+try:
+    curs.execute(sql, (station_id, data_type))
+except Exception, e:
+    print "ERROR: %s: Cannot execute query: %s" % (NAME, str(e),)
+    sys.exit(1)
+latest_timestamp = curs.fetchone()[0]
+if latest_timestamp == None:
+    # No previous data, go back to Unix epoch (January 1, 1970).
+    latest_timestamp = datetime.datetime.fromtimestamp(0)
+
+#---------------------------------------------------------------
+# Iterate over new data and interpolate it.
+#---------------------------------------------------------------
+sql  = "SELECT time_stamp, value FROM data"
+sql += " WHERE station_id = %s"
+sql += " AND type = %s"
+sql += " AND time_stamp > %s"
+sql += " ORDER BY time_stamp"
+#print sql % (station_id, data_type, latest_timestamp)
+try:
+    curs.execute(sql, (station_id, data_type, latest_timestamp))
+except Exception, e:
+    print "ERROR: %s: Cannot execute query: %s" % (NAME, str(e),)
+    sys.exit(1)
+
+for row in curs:
+    x = time.mktime(row[0].timetuple())
+    slope = numpy.interp(x, time_points, slope_points, 1, right_slope)
+    intercept = numpy.interp(x, time_points, intercept_points, 0, right_intercept)
+    y = row[1] * slope + intercept
+
+    #print "time_stamp,value,slope,intercept,interp_value"
+    #print "%s,%s,%f,%f,%f" % (row[0].strftime("%Y-%m-%d %H:%M:%S"), row[1], slope, intercept, y)
+
+    ## Delete an already existing value.
+    #sql_delete = "DELETE FROM data_interp WHERE station_id = %s AND time_stamp = %s AND type = %s"
+    #try:
+    #    curs2.execute(sql_delete, (station_id, row[0], data_type))
+    #except Exception, e:
+    #    print "ERROR: %s: Cannot execute query: %s" % (NAME, str(e),)
+    #    sys.exit(1)
+
+    # Insert the interpolated value.
+    sql_insert  = "INSERT INTO data_interp (station_id, time_stamp, type, value)"
+    sql_insert += " VALUES (%s, %s, %s, %s)"
+    print sql_insert % (station_id, row[0], data_type, y)
+    try:
+        curs2.execute(sql_insert, (station_id, row[0], data_type, y))
+    except Exception, e:
+        print "ERROR: %s: Cannot execute query: %s" % (NAME, str(e),)
+        sys.exit(1)
+
+conn.commit()
+curs2.close()
+curs.close()
+conn.close()
