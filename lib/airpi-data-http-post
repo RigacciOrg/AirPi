@@ -82,7 +82,11 @@ sql = "SELECT min(timestamp) FROM data WHERE datetime(timestamp) > datetime(?)"
 try:
     cur.execute(sql, (remote_dt.strftime(UTC_FORMAT),))
     timestamp = cur.fetchone()[0];
-    first_dt = datetime.datetime.strptime(timestamp, UTC_FORMAT)
+    if timestamp != None:
+        first_dt = datetime.datetime.strptime(timestamp, UTC_FORMAT)
+    else:
+        logging.info("%s: No newer data exists in local database" % (NAME,))
+        sys.exit(0)
 except Exception, e:
     logging.error("%s: Error reading the database: %s" % (NAME, str(e),))
     sys.exit(1)
