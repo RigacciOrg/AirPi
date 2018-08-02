@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+# Copyright (C) 2016-2018 Niccolo Rigacci <niccolo@rigacci.org>
 #
 # Export AirPi data from SQLite database to a remote MQTT server.
 
@@ -83,8 +83,8 @@ if latest_utc > now_utc:
     sys.exit(1)
 
 # Get the timestamp of first data to be transferred.
-sql = 'SELECT min(timestamp) FROM data WHERE datetime(timestamp) > datetime(?)'
-print "%s (%s)" % (sql, latest_naive.strftime(UTC_FORMAT))
+sql = 'SELECT min(timestamp) FROM data WHERE timestamp > ?'
+#print "%s (%s)" % (sql, latest_naive.strftime(UTC_FORMAT))
 try:
     cur.execute(sql, (latest_naive.strftime(UTC_FORMAT),))
     timestamp = cur.fetchone()[0];
@@ -92,7 +92,7 @@ except Exception, e:
     logging.error('%s: Error reading the database: %s' % (NAME, str(e)))
     sys.exit(1)
 if timestamp == None:
-    logging.error('%s: No data to be transferred' % (NAME,))
+    logging.info('%s: No newer data to be transferred' % (NAME,))
     sys.exit(0)
 
 # Limit the transfer to MQTT_XFER_MAX_DAYS of data.
@@ -104,7 +104,7 @@ logging.info('%s: Transfer data from %s to %s' % (NAME, first_dt.strftime(UTC_FO
 # Use naive datetime objects converted to string because
 # the database does not use timezone in timestamp field.
 sql  = "SELECT timestamp, type, value FROM data"
-sql += " WHERE datetime(timestamp) >= datetime(?) AND datetime(timestamp) < datetime(?)"
+sql += " WHERE timestamp >= ? AND timestamp < ?"
 sql += " ORDER BY timestamp, type"
 #print "%s (%s, %s)" % (sql, first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT))
 try:
