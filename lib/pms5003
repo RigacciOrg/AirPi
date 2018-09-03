@@ -314,7 +314,7 @@ log = logging.getLogger()
 log.setLevel(LOG_LEVEL)
 log.addHandler(handler)
 
-port = serial.Serial('/dev/ttyAMA0', baudrate=9600, timeout=SERIAL_TIMEOUT)
+port = serial.Serial(DEVICE, baudrate=9600, timeout=SERIAL_TIMEOUT)
 
 try:
     sensor_wakeup(port)
