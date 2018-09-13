@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016-2017 Niccolo Rigacci <niccolo@rigacci.org>
+# Copyright (C) 2016-2018 Niccolo Rigacci <niccolo@rigacci.org>
 #
 # Data acquisition program for Plantower PMS5003 particulate
 # matter sensor. Developend and tested on the Raspberry Pi.
@@ -30,7 +30,11 @@
 # http://www.rigacci.org/wiki/lib/exe/fetch.php/doc/appunti/hardware/raspberrypi/plantower-pms5003-manual_v2-3.pdf
 #
 # Author        Niccolo Rigacci <niccolo@rigacci.org>
-# Version       0.1.3  2017-10-02
+#
+# Version 0.1.4  2018-09-13
+#   * Read option AVERAGE_READS_SLEEP from configuration file.
+#
+# Version 0.1.3  2017-10-02
 
 # Required Debian packages:
 # apt-get install python-serial
@@ -41,24 +45,23 @@ import ConfigParser
 
 CFG_FILE = '/etc/airpi/airpi.cfg'
 DEFAULTS = {
-    'DEVICE':             '/dev/ttyAMA0',
-    'STATUS_FILE':        '/run/pms5003.status',    # Status file where to save the last averaged reading.
-    'LOG_LEVEL':          'DEBUG',                  # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
-    'PMS5003_RESET_GPIO': '/sys/class/gpio/gpio17', # GPIO wired to RESET line of PMS5003, must be already exported and set to output.
-    'AVERAGE_READS':      '16'                      # Make several reads, then calculate the average.
+    'DEVICE':              '/dev/ttyAMA0',
+    'STATUS_FILE':         '/run/pms5003.status',    # Status file where to save the last averaged reading.
+    'LOG_LEVEL':           'DEBUG',                  # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
+    'PMS5003_RESET_GPIO':  '/sys/class/gpio/gpio17', # GPIO wired to RESET line of PMS5003, must be already exported and set to output.
+    'AVERAGE_READS':       '16',                     # Make several reads, then calculate the average.
+    'AVERAGE_READS_SLEEP': '-1'                      # Seconds to sleep before repeating averaged read. Use -1 to exit.
 }
 config = ConfigParser.RawConfigParser(DEFAULTS)
 try: config.read(CFG_FILE)
 except: pass
 if not config.has_section('pms5003'): config.add_section('pms5003')
-DEVICE             = config.get('pms5003', 'DEVICE')
-STATUS_FILE        = config.get('pms5003', 'STATUS_FILE')
-LOG_LEVEL          = config.get('pms5003', 'LOG_LEVEL')
-PMS5003_RESET_GPIO = config.get('pms5003', 'PMS5003_RESET_GPIO')
-AVERAGE_READS      = config.getint('pms5003', 'AVERAGE_READS')
-
-# Seconds to sleep before repeating averaged read. Use -1 to exit.
-AVERAGE_READS_SLEEP = -1
+DEVICE              = config.get('pms5003', 'DEVICE')
+STATUS_FILE         = config.get('pms5003', 'STATUS_FILE')
+LOG_LEVEL           = config.get('pms5003', 'LOG_LEVEL')
+PMS5003_RESET_GPIO  = config.get('pms5003', 'PMS5003_RESET_GPIO')
+AVERAGE_READS       = config.getint('pms5003', 'AVERAGE_READS')
+AVERAGE_READS_SLEEP = config.getint('pms5003', 'AVERAGE_READS_SLEEP')
 
 # Attempt a sensor reset after some errors.
 RESET_ON_FRAME_ERRORS = 2
