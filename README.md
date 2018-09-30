@@ -21,10 +21,10 @@ following features:
 * Log to stdout/file/syslog.
 
 The **Single Read Mode** is suitable for a cronjob: set 
-AVERAGE_READS_SLEEP to -1. The sensor will be awakened before 
+SLEEP_BETWEEN_READS to -1. The sensor will be awakened before 
 the reading, and it will be put at sleep before program exit.
 
-For the **Endless Loop Mode** set AVERAGE_READS_SLEEP to the 
+For the **Endless Loop Mode** set SLEEP_BETWEEN_READS to the 
 acquiring interval (seconds). If the interval is greather than 
 three times the sensor's settling time, the sensor will be put 
 to sleep before the next read.

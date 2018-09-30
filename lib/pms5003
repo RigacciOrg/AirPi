@@ -17,12 +17,12 @@
 #  * Log to stdout/file/syslog.
 #
 # === Single read ===
-# Mode suitable for a cronjob: set AVERAGE_READS_SLEEP
+# Mode suitable for a cronjob: set SLEEP_BETWEEN_READS
 # to -1. The sensor will be awakened before the reading, and
 # it will be put at sleep before program exit.
 #
 # === Endless loop ===
-# Set AVERAGE_READS_SLEEP to the acquiring interval (seconds).
+# Set SLEEP_BETWEEN_READS to the acquiring interval (seconds).
 # If the interval is greather than three times the sensor's settling
 # time, the sensor will be put to sleep before the next read.
 #
@@ -32,7 +32,7 @@
 # Author        Niccolo Rigacci <niccolo@rigacci.org>
 #
 # Version 0.1.4  2018-09-13
-#   * Read option AVERAGE_READS_SLEEP from configuration file.
+#   * Read option SLEEP_BETWEEN_READS from configuration file.
 #
 # Version 0.1.3  2017-10-02
 
@@ -50,7 +50,7 @@ DEFAULTS = {
     'LOG_LEVEL':           'DEBUG',                  # From logging module: NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
     'PMS5003_RESET_GPIO':  '/sys/class/gpio/gpio17', # GPIO wired to RESET line of PMS5003, must be already exported and set to output.
     'AVERAGE_READS':       '16',                     # Make several reads, then calculate the average.
-    'AVERAGE_READS_SLEEP': '-1'                      # Seconds to sleep before repeating averaged read. Use -1 to exit.
+    'SLEEP_BETWEEN_READS': '-1'                      # Seconds to sleep before repeating averaged read. Use -1 to exit.
 }
 config = ConfigParser.RawConfigParser(DEFAULTS)
 try: config.read(CFG_FILE)
@@ -61,7 +61,7 @@ STATUS_FILE         = config.get('pms5003', 'STATUS_FILE')
 LOG_LEVEL           = config.get('pms5003', 'LOG_LEVEL')
 PMS5003_RESET_GPIO  = config.get('pms5003', 'PMS5003_RESET_GPIO')
 AVERAGE_READS       = config.getint('pms5003', 'AVERAGE_READS')
-AVERAGE_READS_SLEEP = config.getint('pms5003', 'AVERAGE_READS_SLEEP')
+SLEEP_BETWEEN_READS = config.getint('pms5003', 'SLEEP_BETWEEN_READS')
 
 # Attempt a sensor reset after some errors.
 RESET_ON_FRAME_ERRORS = 2
@@ -342,9 +342,9 @@ while True:
                 error_count = 0
                 continue
             if error_total >= MAX_FRAME_ERRORS:
-                if (AVERAGE_READS_SLEEP >= 0):
+                if (SLEEP_BETWEEN_READS >= 0):
                     logging.error("Too many read errors, sleeping a while")
-                    time.sleep(AVERAGE_READS_SLEEP)
+                    time.sleep(SLEEP_BETWEEN_READS)
                     error_total = 0
                     continue
                 else:
@@ -383,18 +383,18 @@ while True:
             logging.info("Average data: %s" % (average_str,))
             save_data(average_str)
             del reads_list[:]
-            if AVERAGE_READS_SLEEP < 0:
+            if SLEEP_BETWEEN_READS < 0:
                 break
-            if AVERAGE_READS_SLEEP > (WAIT_AFTER_WAKEUP * 3):
+            if SLEEP_BETWEEN_READS > (WAIT_AFTER_WAKEUP * 3):
                 # If sleep time is long enough, enter sensor sleep state.
                 sensor_sleep(port)
-                logging.info("Waiting %d seconds before new read" % (AVERAGE_READS_SLEEP,))
-                time.sleep(AVERAGE_READS_SLEEP)
+                logging.info("Waiting %d seconds before new read" % (SLEEP_BETWEEN_READS,))
+                time.sleep(SLEEP_BETWEEN_READS)
                 sensor_wakeup(port)
             else:
                 # Keep sensor awake and wait for next reads.
-                logging.info("Waiting %d seconds before new read" % (AVERAGE_READS_SLEEP,))
-                time.sleep(AVERAGE_READS_SLEEP)
+                logging.info("Waiting %d seconds before new read" % (SLEEP_BETWEEN_READS,))
+                time.sleep(SLEEP_BETWEEN_READS)
                 port.flushOutput()
                 port.flushInput()
 
