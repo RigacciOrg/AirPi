@@ -92,6 +92,20 @@ function pressure_diff_3h() {
     }
 }
 
+// Get (type, value) rows from an SQLite database, return an associative array.
+function get_avg_values($db, $sql){
+    $values = array();
+    try {
+        $res = $db->query($sql);
+        while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            $values[$row['type']] = $row['value'];
+        }
+    } catch (Exception $e) {
+        error_log('get_avg_values() Exception: ' . $e->getMessage());
+    }
+    return $values;
+}
+
 // Use SQLite database.
 function pressure_diff_sqlite() {
     try {
@@ -100,19 +114,35 @@ function pressure_diff_sqlite() {
         error_log('pressure_diff_sqlite() Exception: ' . $e->getMessage());
         return NULL;
     }
-    $sql  = "SELECT avg(value) AS p FROM data WHERE %s AND type = 'p'";
-    $intvl1 = "datetime(timestamp) BETWEEN datetime('now', '-3 hours', '-30 minutes') AND datetime('now', '-3 hours')";
-    $intvl2 = "datetime(timestamp) BETWEEN datetime('now', '-30 minutes') AND datetime('now')";
-    $sql1 = sprintf($sql, $intvl1);
-    $p1 = $db->querySingle($sql1);
-    $sql2 = sprintf($sql, $intvl2);
-    $p2 = $db->querySingle($sql2);
-    //error_log(sprintf('pressure_diff_sqlite(): $p1 = %s, %s, $p2 = %s, %s', gettype($p1), $p1, gettype($p2), $p2));
-    if ($p1 != FALSE and $p1 != NULL and $p2 != FALSE and $p2 != NULL) {
-        return $p2 - $p1;
+    $s1 = "SELECT strftime('%Y-%m-%dT%H:%M:%SZ', datetime("; $s2 = "))";
+    try {
+        $t0_0 = $db->querySingle($s1 . "'now', '-3 hours', '-30 minutes'" . $s2);
+        $t0_1 = $db->querySingle($s1 . "'now', '-3 hours'" . $s2);
+        $t1_0 = $db->querySingle($s1 . "'now', '-30 minutes'" . $s2);
+        $t1_1 = $db->querySingle($s1 . "'now'" . $s2);
+    } catch (Exception $e) {
+        error_log('pressure_diff_sqlite() Exception: ' . $e->getMessage());
+        return NULL;
     }
-    error_log('pressure_diff_sqlite(): Cannot calculate, return NULL');
-    return NULL;
+    if ($t0_0 == FALSE or $t0_1 == FALSE or $t1_0 == FALSE or $t1_1 == FALSE) {
+        error_log('pressure_diff_sqlite(): Cannot calculate datetime(). Returning NULL');
+        return NULL;
+    }
+    $sql  = "SELECT type, avg(value) AS value FROM data";
+    $sql .= " WHERE timestamp BETWEEN '%s' AND '%s' GROUP BY type";
+    $query1 = sprintf($sql, $t0_0, $t0_1);
+    $query2 = sprintf($sql, $t1_0, $t1_1);
+    $values1 = get_avg_values($db, $query1);
+    $values2 = get_avg_values($db, $query2);
+    $p1 = $p2 = NULL;
+    if (array_key_exists('p', $values1)) $p1 = $values1['p'];
+    if (array_key_exists('p', $values2)) $p2 = $values2['p'];
+    if ($p1 != NULL and $p2 != NULL) {
+        return $p2 - $p1;
+    } else {
+        error_log('pressure_diff_sqlite(): Cannot calculate. Returning NULL');
+        return NULL;
+    }
 }
 
 // Use PostgreSQL database.
