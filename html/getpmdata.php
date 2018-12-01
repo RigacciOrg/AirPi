@@ -58,9 +58,17 @@ if (PG_CONNECT != '') {
         $db = FALSE;
     }
     if ($db) {
-        $sql  = "SELECT strftime('%%Y-%%m-%%d', timestamp, 'localtime') AS day, avg(value) AS pm10";
-        $sql .= " FROM data WHERE day >= '%s' AND day <= '%s' AND type = 'pm10' GROUP BY day ORDER BY day";
-        $sql = sprintf($sql, $from_day, $to_day);
+        // Get the UTC timestamps of interval's begin and end.
+        $sql = "SELECT strftime('%Y-%m-%dT%H:%M:%SZ', '" . $from_day . "T00:00:00', 'UTC')";
+        $from_timestamp = $db->querySingle($sql);
+        $sql = "SELECT strftime('%Y-%m-%dT%H:%M:%SZ', '" . $to_day . "T23:59:59', 'UTC')";
+        $to_timestamp = $db->querySingle($sql);
+        // Get average data group by each single day.
+        $sql  = "SELECT strftime('%Y-%m-%d', timestamp, 'localtime') AS day, avg(value) AS pm10";
+        $sql .= " FROM data WHERE type = 'pm10'";
+        $sql .= " AND timestamp >= '" . $from_timestamp . "'";
+        $sql .= " AND timestamp <= '" . $to_timestamp . "'";
+        $sql .= " GROUP BY day ORDER BY day";
         //print "$sql\n";
         $result = $db->query($sql);
         // For JavaScript Date(): january is month 0.
