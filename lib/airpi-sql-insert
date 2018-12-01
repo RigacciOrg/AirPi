@@ -32,6 +32,7 @@ def sqlcreate(filename):
             type      TEXT,
             value     REAL)''')
         con.execute('CREATE INDEX data_timestamp_idx ON data (timestamp)')
+        con.execute('CREATE INDEX data_type_timestamp_idx ON data (type, timestamp)')
         con.execute('CREATE INDEX data_type_idx ON data (type)')
         con.execute('CREATE UNIQUE INDEX data_timestamp_type_key ON data (timestamp, type)')
         con.commit()
