@@ -1,0 +1,176 @@
+msgid "Username"
+msgstr "Nome utente"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Login"
+msgstr "Accedi"
+
+msgid "Status"
+msgstr "Informazioni"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "There are %d pending changes"
+msgstr "Ci sono %d modifiche non ancora applicate"
+
+msgid "There are errors, check: %s"
+msgstr "Ci sono errori, correggere: %s"
+
+msgid "System Information"
+msgstr "Informazioni sul sistema"
+
+msgid "Connection"
+msgstr "Connessione"
+
+msgid "System Rebooting Now!"
+msgstr "Il sistema si sta riavviando!"
+
+msgid "System Powering Off Now!"
+msgstr "Il sistema si sta spengendo!"
+
+msgid "Applying Pending Config and Rebooting Now!"
+msgstr "Applicazione delle configurazioni e riavvio!"
+
+msgid "Hostname"
+msgstr "Nome Host"
+
+msgid "Pi Revision"
+msgstr "Revisione Raspberry Pi"
+
+msgid "Memory Used"
+msgstr "Memoria Utilizzata"
+
+msgid "CPU Load"
+msgstr "Carico CPU"
+
+msgid "Apply Changes and Reboot"
+msgstr "Applica le modifiche e riavvia"
+
+msgid "Reboot"
+msgstr "Riavvia"
+
+msgid "Poweroff"
+msgstr "Spengi"
+
+msgid "Refresh"
+msgstr "Aggiorna"
+
+msgid "Save settings"
+msgstr "Salva impostazioni"
+
+msgid "Options saved. There are %d changes pending for application"
+msgstr "Impostazioni salvate. Ci sono %d modifiche da applicare"
+
+msgid "Network Configuration"
+msgstr "Configurazione Internet"
+
+msgid "Wired Interface"
+msgstr "Interfaccia cablata"
+
+msgid "Automatic by DHCP"
+msgstr "Automatica con DHCP"
+
+msgid "WiFi Interface"
+msgstr "Interfaccia WiFi"
+
+msgid "IP Address"
+msgstr "Indirizzo IP"
+
+msgid "Interface"
+msgstr "Interfaccia"
+
+msgid "MAC Address"
+msgstr "Indirizzo MAC"
+
+msgid "Subnet Mask"
+msgstr "Maschera sottorete"
+
+msgid "Default Gateway"
+msgstr "Gateway predefinito"
+
+msgid "WiFi Signal Quality"
+msgstr "Qualità del segnale WiFi"
+
+msgid "DNS Server"
+msgstr "Server DNS"
+
+msgid "Alternative Address"
+msgstr "Indirizzo Alternativo"
+
+msgid "Show password"
+msgstr "Mostra password"
+
+msgid "Admin Password"
+msgstr "Password di accesso"
+
+msgid "Old password"
+msgstr "Vecchia password"
+
+msgid "New password (min %d chars)"
+msgstr "Nuova password (min %d caratteri)"
+
+msgid "Repeat new password"
+msgstr "Ripeti nuova password"
+
+msgid "New password invalid or mismatch"
+msgstr "Nuova password non valida o non coincidente"
+
+msgid "Invalid username"
+msgstr "Nome utente non valido"
+
+msgid "Admin password updated"
+msgstr "Password modificata"
+
+msgid "Failed to update admin password"
+msgstr "Impossibile modificare la password"
+
+msgid "Old password does not match"
+msgstr "La vecchia password è sbagliata"
+
+msgid "Uptime"
+msgstr "In funzione da"
+
+msgid "days"
+msgstr "giorni"
+
+msgid "day"
+msgstr "giorno"
+
+msgid "hours"
+msgstr "ore"
+
+msgid "hour"
+msgstr "ora"
+
+msgid "minutes"
+msgstr "minuti"
+
+msgid "minute"
+msgstr "minuto"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Submit"
+msgstr "Esegui"
+
+msgid "Reboot Confirm"
+msgstr "Conferma riavvio"
+
+msgid "Poweroff Confirm"
+msgstr "Conferma spengimento"
+
+msgid "Apply Config and Reboot Confirm"
+msgstr "Conferma applicazione configurazioni e riavvio"
+
+msgid "The system will reboot with the current configuration (pending excluded)."
+msgstr "Il sistema sarà riavviato con le configurazioni attuali (escluse le modifiche non applicate)."
+
+msgid "WARNING: You will need manual intervention to power on the system again!"
+msgstr "ATTENZIONE: Sarà necessario un intervento manuale per accendere nuovamente il sistema!"
+
+msgid "All the pending configuration will be applied, then the system will reboot."
+msgstr "Verranno applicate tutte le modifiche alla configurazione e il sistema sarà riavviato."

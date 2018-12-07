@@ -1,0 +1,113 @@
+msgid "Configuration"
+msgstr "Configurazione"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Internet"
+msgstr "Internet"
+
+msgid "Weather Station"
+msgstr "Stazione meteo"
+
+msgid "Data Forward"
+msgstr "Inoltro dati"
+
+msgid "Admin Password"
+msgstr "Password"
+
+msgid "Graphs"
+msgstr "Grafici"
+
+msgid "Change viewtype"
+msgstr "Cambia vista"
+
+msgid "Daily"
+msgstr "Giornaliera"
+
+msgid "Monthly"
+msgstr "Mensile"
+
+msgid "Yearly"
+msgstr "Annuale"
+
+msgid "Weekly"
+msgstr "Settimanale"
+
+msgid "Calendar"
+msgstr "Calendario"
+
+msgid "Exceeding PM10 Calendar"
+msgstr "Calendario superamenti PM10"
+
+msgid "Station Name"
+msgstr "Nome stazione"
+
+msgid "Latitude"
+msgstr "Latitudine"
+
+msgid "Longitude"
+msgstr "Longitudine"
+
+msgid "Elevation"
+msgstr "Altezza s.l.m."
+
+msgid "PM Sensor ID"
+msgstr "ID Sensore PM"
+
+msgid "PM Serial Device"
+msgstr "Porta seriale sensore PM"
+
+msgid "BME280 I2C Address"
+msgstr "Indirizzo I2C sens. BME280"
+
+msgid "HTTP Protocol"
+msgstr "Protocollo HTTP"
+
+msgid "MQTT Protocol"
+msgstr "Protocollo MQTT"
+
+msgid "Download of CSV file will start automatically by clicking the desired period. The operation can take a few minutes to complete; for example the extraction of an entire year produces a file of about 12 Mb and requires a processing time of about 2 minutes."
+msgstr "Il download del file CSV si avvia automaticamente con il click sul periodo desiderato. L'operazione può richiedere alcuni minuti per essere completata; ad esempio l'estrazione di un intero anno produce un file di circa 12 Mb e richiede una elaborazione di circa 2 minuti."
+
+msgid "Data Download"
+msgstr "Download dati"
+
+msgid "CSV Export"
+msgstr "Formato CSV"
+
+msgid "Data Selection"
+msgstr "Seleziona dati"
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Pressure"
+msgstr "Pressione"
+
+msgid "Humidity"
+msgstr "Umidità"
+
+msgid "PM10 Concentration"
+msgstr "Concentrazione PM10"
+
+msgid "PM2.5 Concentration"
+msgstr "Concentrazione PM2.5"
+
+msgid "Current Period"
+msgstr "Periodo attuale"
+
+msgid "Previous Period"
+msgstr "Periodo precedente"
+
+msgid "Day"
+msgstr "Giorno"
+
+msgid "Week"
+msgstr "Settimana"
+
+msgid "Month"
+msgstr "Mese"
+
+msgid "Year"
+msgstr "Anno"
