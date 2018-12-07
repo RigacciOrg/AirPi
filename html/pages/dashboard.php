@@ -1,10 +1,9 @@
 <?php
-// $station_id is defined by the including script.
+if (!isset($station_id)) exit('Direct access denied');
 $sensor = get_latest_data($station_id);
 $pm10_icon = pm10_icon($sensor['pm10']);
 $pressure_icon = pressure_icon($sensor['pressure']);
 $tendency_icon = tendency_icon(pressure_diff_3h());
-
 ?>
             <div class="row">
               <p>
@@ -34,7 +33,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                 </div>
                                 <div class="col-xs-6 text-right">
                                     <div class="huge"><?= my_sprintf('%d', $sensor['pressure']) ?></div>
-                                    <div>Pressione hPa</div>
+                                    <div><?= my_html(_('Pressure')) ?> hPa</div>
                                 </div>
                             </div>
                         </div>
@@ -51,7 +50,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                 </div>
                                 <div class="col-xs-6 text-right">
                                     <div class="huge"><?= my_sprintf('%.2f', $sensor['temperature']) ?></div>
-                                    <div>Temperatura °C</div>
+                                    <div><?= my_html(_('Temperature')) ?> °C</div>
                                 </div>
                             </div>
                         </div>
@@ -66,7 +65,7 @@ $tendency_icon = tendency_icon(pressure_diff_3h());
                                 </div>
                                 <div class="col-xs-6 text-right">
                                     <div class="huge"><?= my_sprintf('%.2f', $sensor['humidity']) ?></div>
-                                    <div>Umidit&agrave; %</div>
+                                    <div><?= my_html(_('Humidity')) ?> %</div>
                                 </div>
                             </div>
                         </div>

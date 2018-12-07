@@ -1,7 +1,40 @@
 <?php
 
-require_once('config.php');
+// Return the numeric value of $_REQUEST['id'], as a string.
+// Fallback to '0' if parameter is missing.
+function requested_station_id() {
+    if (isset($_REQUEST['id'])) {
+        if (is_numeric($_REQUEST['id'])) {
+            return strval(intval($_REQUEST['id']));
+        }
+    }
+    return '0';
+}
 
+// Return the station name, upon $_REQUEST['id'].
+function requested_station_name($station_id) {
+    global $config;
+    if ($station_id == '0') {
+        // Local system: read station's name from $config array.
+        $station_name = $config['station_name'];
+    } else {
+        // Web datacenter: get station's name from database.
+        if ($config['pg_connect'] != '') {
+            if (($db = pg_connect($config['pg_connect'])) !== FALSE) {
+                $sql  = "SELECT id, name, lat, lon FROM stations WHERE id = " . $station_id ;
+                $result = pg_query($db, $sql);
+                while($row = pg_fetch_assoc($result)) {
+                    $station_name = $row['name'];
+                }
+            }
+        } else {
+            $station_name = 'Station ID ' . $station_id;
+        }
+    }
+    return $station_name;
+}
+
+// Convert to HTML entities, using UTF-8.
 function my_html($str) {
     return(htmlentities($str, ENT_COMPAT, 'UTF-8'));
 }
@@ -18,6 +51,7 @@ function my_sprintf($format, $arg) {
     return sprintf($format, $arg);
 }
 
+// Return the name of an appropriate icon, based on the PM10 level.
 function pm10_icon($val) {
     if ($val === NULL) return 'rof-car-smoke';
     if     ($val < 20) return 'rof-flower-4';
@@ -38,6 +72,7 @@ function pressure_icon($val) {
     else                 return 'rof-weather-sun';
 }
 
+// Return the name of an appropriate icon, based on pressure variation.
 function tendency_icon($val) {
     if ($val === NULL) return '';
     if     ($val < -3) return 'rof-arrow-down-3';
@@ -50,8 +85,9 @@ function tendency_icon($val) {
 }
 
 // Return the most recent sensor values, from the RRD archive.
-// Return NULL for unavailable values or older than STALE_RRD seconds.
+// Return NULL for unavailable values or older than $config['stale_rrd'] seconds.
 function get_latest_data($station_id='0') {
+    global $config;
     if (!preg_match('/^\d{1,3}$/', $station_id)) $station_id = '0';
     $sensors = array('temperature', 'pressure', 'humidity', 'pm10');
     $values = array();
@@ -64,7 +100,7 @@ function get_latest_data($station_id='0') {
             $val = preg_split('/[\s]+/', trim($output[2]));
             if (count($val) >= 10) {
                 $timestamp = (int)substr($val[0], 0, -1);
-                if ((time() - $timestamp) < STALE_RRD) {
+                if ((time() - $timestamp) < $config['stale_rrd']) {
                     // See airpi-data-store-rrd script for fields order.
                     $values['temperature'] = ($val[1] == 'U') ? NULL : (float)$val[1] / 1000.0;
                     $values['pressure']    = ($val[2] == 'U') ? NULL : (float)$val[2] / 1000.0;
@@ -85,7 +121,8 @@ function get_latest_data($station_id='0') {
 //  < 3 hPa Expected weather variation in 12-24 next hours.
 //  < 6 hPa Weather variation occurring now.
 function pressure_diff_3h() {
-    if (PG_CONNECT != '') {
+    global $config;
+    if ($config['pg_connect'] != '') {
         return pressure_diff_pgsql();
     } else {
         return pressure_diff_sqlite();
@@ -147,7 +184,8 @@ function pressure_diff_sqlite() {
 
 // Use PostgreSQL database.
 function pressure_diff_pgsql() {
-    if (($db = pg_connect(PG_CONNECT)) !== FALSE) {
+    global $config;
+    if (($db = pg_connect($config['pg_connect'])) !== FALSE) {
         $sql = "SELECT avg(value) AS p FROM data WHERE %s AND type = 'p'";
         $intvl1 = "time_stamp BETWEEN (now() AT TIME ZONE 'UTC' - INTERVAL '3 hours 30 minutes') AND (now() AT TIME ZONE 'UTC' - INTERVAL '3 hours')";
         $intvl2 = "time_stamp BETWEEN (now() AT TIME ZONE 'UTC' - INTERVAL '30 minutes') AND (now() AT TIME ZONE 'UTC')";

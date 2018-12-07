@@ -1,6 +1,8 @@
 <?php
-require_once('config.php');
-// $station_id is now defined.
+
+require_once './functions.php';
+require_once './config-init.php';
+$station_id = requested_station_id();
 
 // Extract one year of data, back from today.
 // Strings represent dates in localtime (PHP-server idea of).
@@ -20,14 +22,14 @@ function color_arpat_like($val) {
 
 $data = array();
 
-if (PG_CONNECT != '') {
+if ($config['pg_connect'] != '') {
     // Use PostgreSQL database.
     // NOTICE: time_stamp field in database is without timezone, it is converted to timezone-aware
     // using the "AT TIME ZONE" construct and presented in localtime (PosgresSQL idea of). To
     // change PostgreSQL idea of localtime use something like: SET TIME ZONE 'America/Los_Angeles';
     // Query parameters are casted to timestamp without timezone and comparison is performed
     // against presented localtime, disregarding timezone.
-    if (($db = pg_connect(PG_CONNECT)) !== FALSE) {
+    if (($db = pg_connect($config['pg_connect'])) !== FALSE) {
         $sql  = "SELECT to_char(time_stamp AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, avg(value) AS pm10 FROM data";
         $sql .= " WHERE (time_stamp AT TIME ZONE 'UTC') >= '%s'::TIMESTAMP";
         $sql .= " AND (time_stamp AT TIME ZONE 'UTC') < '%s'::TIMESTAMP";

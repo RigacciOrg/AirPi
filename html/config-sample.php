@@ -1,12 +1,22 @@
 <?php
 
-// $station_id is always "0" for the AirPi station itself.
-// It is used by an AirPi web datacenter, to show different stations.
-$station_id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '0';
+// Title used in web pages, etc.
+$config['app_title'] = 'AirPi Station';
 
-define('STATION_NAME', 'My AirPi Station');
-define('APP_TITLE',    'AirPi Station');
-define('PG_CONNECT', '');   // Leave blank to use SQLite.
-define('STALE_RRD', 900);   // Ignore RRD data if older than (seconds).
+// Identification of this host (location, etc.).
+$config['station_name'] = 'Local AirPi Station';
+
+// See available locales in "locale" directory.
+$config['lang'] = 'en_US';
+
+// Leave blank to use SQLite.
+$config['pg_connect'] = '';
+
+// Ignore RRD data if older than (seconds).
+$config['stale_rrd'] = 900;
+
+// Directory conaining config options files: options, options-regexp
+// and options-pending. Used by the web configuration interface.
+$config['config_options_dir'] = '/etc/host-config';
 
 ?>

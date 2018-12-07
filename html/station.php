@@ -1,9 +1,36 @@
 <?php
-require_once('functions.php');
-// $station_id is now defined.
+ob_start ();
+session_start();
+if (isset($_REQUEST['logout'])) {
+    unset($_SESSION['username']);
+    header('Location: ./');
+    exit;
+}
+require_once './functions.php';
+require_once './config-init.php';
+$station_id = requested_station_id();
+$station_name = requested_station_name($station_id);
+
+// Translations are in ./locale/ directory.
+putenv('LC_ALL=' . $config['lang']);
+setlocale(LC_ALL, $config['lang']);
+// We have two sets of messages: "default.po" and "cfg_default.po".
+bindtextdomain('default', './locale');
+bindtextdomain('cfg_default', './locale');
+// The one to be used in this page.
+textdomain('default');
+// The ISO 639-1 language code (the first two chars).
+$iso_639_1 = (strlen($config['lang']) >= 2) ? substr($config['lang'], 0, 2) : 'en';
+
 $refresh = FALSE;
-$page = isset($_GET['page']) ? $_GET['page'] : NULL;
+$page = isset($_GET['p']) ? $_GET['p'] : NULL;
 switch ($page) {
+    case 'cfg_data_forward':
+    case 'cfg_network':
+    case 'cfg_passwd':
+    case 'cfg_station':
+    case 'cfg_system':
+        break;
     case 'graphs':
         $refresh = 600;
         break;
@@ -16,7 +43,7 @@ switch ($page) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="<?= $iso_639_1 ?>">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -32,7 +59,7 @@ switch ($page) {
 <?php
 if ($refresh) echo '    <meta http-equiv="refresh" content="' . $refresh . '">' . "\n";
 ?>
-    <title><?= my_html(APP_TITLE) ?></title>
+    <title><?= my_html($config['app_title']) ?></title>
 
     <!-- Bootstrap Core CSS -->
     <link href="inc/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
@@ -46,6 +73,8 @@ if ($refresh) echo '    <meta http-equiv="refresh" content="' . $refresh . '">' 
 <?php
 if ($page == 'calendar') echo '    <link href="inc/cal/bootstrap-year-calendar.min.css" rel="stylesheet" type="text/css">' . "\n";
 ?>
+    <!-- Local CSS overrides -->
+    <link href="inc/cfg_style.css" rel="stylesheet" type="text/css">
     <link href="inc/airpi.css" rel="stylesheet" type="text/css">
 
 </head>
@@ -60,16 +89,26 @@ if ($page == 'calendar') echo '    <link href="inc/cal/bootstrap-year-calendar.m
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="./"><i class="fa fa-envira fa-fw"></i> <?= my_html(STATION_NAME) ?></a>
+                <a class="navbar-brand" href="./"><i class="fa fa-envira fa-fw"></i> <?= my_html($station_name) ?></a>
             </div><!-- /.navbar-header -->
 
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
-                        <li><a href="?id=<?= $station_id ?>&amp;page=dashboard"><i class="fa fa-dashboard fa-fw"></i> Display</a></li>
-                        <li><a href="?id=<?= $station_id ?>&amp;page=graphs"><i class="fa fa-area-chart fa-fw"></i> Grafici</a></li>
-                        <li><a href="?id=<?= $station_id ?>&amp;page=calendar"><i class="fa fa-calendar fa-fw"></i> Calendario</a></li>
-                        <li><a href="?id=<?= $station_id ?>&amp;page=download"><i class="fa fa-download fa-fw"></i> Download dati</a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;p=dashboard"><i class="fa fa-dashboard fa-fw"></i> <?= my_html(_('Display')) ?></a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;p=graphs"><i class="fa fa-area-chart fa-fw"></i> <?= my_html(_('Graphs')) ?></a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;p=calendar"><i class="fa fa-calendar fa-fw"></i> <?= my_html(_('Calendar')) ?></a></li>
+                        <li><a href="?id=<?= $station_id ?>&amp;p=download"><i class="fa fa-download fa-fw"></i> <?= my_html(_('Data Download')) ?></a></li>
+                        <li><a href="#"><i class="fa fa-wrench fa-fw"></i> <?= my_html(_('Configuration')) ?><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                <li><a href="?p=cfg_passwd"><i class="fa fa-lock fa-fw"></i> <?= my_html(_('Admin Password')); ?></a></li>
+                                <li><a href="?p=cfg_system"><i class="fa fa-cube fa-fw"></i> <?= my_html(_('System')); ?></a></li>
+                                <li><a href="?p=cfg_network"><i class="fa fa-signal fa-fw"></i> <?= my_html(_('Internet')); ?></a></li>
+                                <li><a href="?p=cfg_station"><i class="fa fa-tags fa-fw"></i> <?= my_html(_('Weather Station')); ?></a></li>
+                                <li><a href="?p=cfg_data_forward"><i class="fa fa-database fa-fw"></i> <?= my_html(_('Data Forward')); ?></a></li>
+                                <li><a href="?logout=yes"><i class="fa fa-sign-out fa-fw"></i> <?= my_html(_('Logout')) ?></a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div><!-- /.sidebar-collapse -->
             </div><!-- /.navbar-static-side -->
@@ -95,8 +134,13 @@ if ($page == 'calendar') {
     echo '    <script src="inc/cal/bootstrap-year-calendar.min.js"></script>' . "\n";
     echo '    <script src="inc/cal/bootstrap-year-calendar.it.js" charset="UTF-8"></script>' . "\n";
 }
+if (file_exists("pages/${page}.js")) {
+    echo '    <!-- Custom JavaScript for this page -->' . "\n";
+    echo '    <script src="pages/' . $page . '.js"></script>' . "\n";
+}
 ?>
     <script src="inc/airpi.js"></script>
 
 </body>
 </html>
+<?php ob_end_flush(); ?>

@@ -1,30 +1,28 @@
 <?php
-// $station_id is defined by the including script.
+if (!isset($station_id)) exit('Direct access denied');
 $period = isset($_REQUEST['view']) ? $_REQUEST['view'] : 'weekly';
 switch ($period) {
     case 'daily':
-        $period_label = 'Giornaliera';
+        $period_label = _('Daily');
         break;
     case 'monthly':
-        $period_label = 'Mensile';
+        $period_label = _('Monthly');
         break;
     case 'yearly':
-        $period_label = 'Annuale';
+        $period_label = _('Yearly');
         break;
     default:
         $period = 'weekly';
-        $period_label = 'Settimanale';
+        $period_label = _('Weekly');
 }
 $graph_src = sprintf('rrd-graph.php?id=%s&amp;period=%s&amp;graph=', $station_id, $period);
-$view_href = sprintf('?id=%s&amp;page=graphs&amp;view=', $station_id);
-
+$view_href = sprintf('?id=%s&amp;p=graphs&amp;view=', $station_id);
 ?>
             <div class="row">
                 <div class="col-lg-12">
-                    <h3 class="page-header">Grafici</h3>
+                    <p>
                 </div><!-- /.col-lg-12 -->
             </div>
-
             <div class="row">
                 <div class="col-lg-8">
                     <div class="panel panel-primary">
@@ -33,14 +31,14 @@ $view_href = sprintf('?id=%s&amp;page=graphs&amp;view=', $station_id);
                             <div class="pull-right">
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
-                                        Cambia vista
+                                        <?= my_html(_('Change viewtype')) ?>
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu" id="period-select">
-                                        <li><a data-alias="daily"   href="<?= $view_href ?>daily">Giornaliera</a></li>
-                                        <li><a data-alias="weekly"  href="<?= $view_href ?>weekly">Settimanale</a></li>
-                                        <li><a data-alias="monthly" href="<?= $view_href ?>monthly">Mensile</a></li>
-                                        <li><a data-alias="yearly"  href="<?= $view_href ?>yearly">Annuale</a></li>
+                                        <li><a data-alias="daily"   href="<?= $view_href ?>daily"><?= my_html(_('Daily')) ?></a></li>
+                                        <li><a data-alias="weekly"  href="<?= $view_href ?>weekly"><?= my_html(_('Weekly')) ?></a></li>
+                                        <li><a data-alias="monthly" href="<?= $view_href ?>monthly"><?= my_html(_('Monthly')) ?></a></li>
+                                        <li><a data-alias="yearly"  href="<?= $view_href ?>yearly"><?= my_html(_('Yearly')) ?></a></li>
                                     </ul>
                                 </div>
                             </div>

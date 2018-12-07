@@ -4,8 +4,9 @@
 //   * download_csv.php?id=0&period=curr_day
 //   * download_csv.php?id=0&period=curr_day&data[]=pm10&data[]=hum
 
-require_once('functions.php');
-// $station_id is now defined.
+require_once './functions.php';
+require_once './config-init.php';
+$station_id = requested_station_id();
 
 $periods = array ('day', 'week', 'month', 'year');
 $valid_fields = array('t', 'p', 'hum', 'pm10');
@@ -76,7 +77,7 @@ if (array_key_exists('period', $_REQUEST)) {
         //print $cmd . "<br>\n";
         //error_log(basename(__FILE__) . ': Executing: ' . $cmd);
         header('Content-Type: text/csv; charset=utf-8');
-        $filename = sprintf('airpi_%s_%s_%s.csv', sanitize_name(STATION_NAME), $begin_date, $end_date);
+        $filename = sprintf('airpi_%s_%s_%s.csv', sanitize_name($config['station_name']), $begin_date, $end_date);
         header("Content-Disposition: attachment; filename=\"$filename\"");
         passthru($cmd, $ret);
         //error_log(basename(__FILE__) . ': Command returned ' . $ret);

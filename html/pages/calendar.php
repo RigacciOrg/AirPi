@@ -1,5 +1,5 @@
 <?php
-// $station_id is defined by the including script.
+if (!isset($station_id)) exit('Direct access denied');
 ?>
             <div class="row">
                 <p>
@@ -8,7 +8,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <i class="fa fa-calendar fa-fw"></i> Calendario superamenti PM10
+                            <i class="fa fa-calendar fa-fw"></i> <?= my_html(_('Exceeding PM10 Calendar')) ?>
                         </div><!-- /.panel-heading -->
                         <div class="panel-body">
                             <div id="calendar" station-id="<?= $station_id ?>"></div>
