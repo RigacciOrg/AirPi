@@ -23,7 +23,7 @@ $iso_639_1 = (strlen($config['lang']) >= 2) ? substr($config['lang'], 0, 2) : 'e
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="description" content="">
     <meta name="author" content="Niccolo Rigacci <niccolo@rigacci.org>">
-    <title>Aerocene Exploration Tools</title>
+    <title><?= my_html($config['app_title']) ?></title>
     <!-- Bootstrap Core CSS -->
     <link rel="stylesheet" href="inc/bootstrap/css/bootstrap.min.css" type="text/css">
     <!-- Custom CSS -->
